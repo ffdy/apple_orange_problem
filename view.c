@@ -49,8 +49,8 @@ float memOffset[N][2] = {
   -0.2f, -0.2f
 };
 
-unsigned int VAO[2], VBO[2], EBO[2];
-unsigned int shaderProgram[3];
+GLuint VAO[2], VBO[2], EBO[2];
+GLuint shaderProgram[3];
 
 char *getShaderSource(const char *path) {
   FILE *file = fopen(path, "r");
@@ -65,7 +65,7 @@ char *getShaderSource(const char *path) {
   return shaderSource;
 }
 
-void compileShader(const char *glslPath, unsigned int shaderID) {
+void compileShader(const char *glslPath, GLuint shaderID) {
   int success;
   char infoLog[512];
   const char *shaderSource = getShaderSource(glslPath);
@@ -78,7 +78,7 @@ void compileShader(const char *glslPath, unsigned int shaderID) {
   }
 }
 
-void genTextureFromFile(unsigned int textureIndex, unsigned int textureID, const char *imgPath) {
+void genTextureFromFile(GLuint textureIndex, GLuint textureID, const char *imgPath) {
   glActiveTexture(textureIndex);
   glBindTexture(GL_TEXTURE_2D, textureID);
    // 设定对象环绕、过滤方式
@@ -100,7 +100,7 @@ void genTextureFromFile(unsigned int textureIndex, unsigned int textureID, const
   stbi_image_free(data);
 }
 
-void genTextureFromColor(unsigned int textureIndex, unsigned int textureID,
+void genTextureFromColor(GLuint textureIndex, GLuint textureID,
                          vec3_t color) {
   glActiveTexture(textureIndex);
   glBindTexture(GL_TEXTURE_2D, textureID);
@@ -196,7 +196,7 @@ void *view(void *arg) {
   // 顶点着色器
   const char *vertexShaderSource =
       getShaderSource("../shader/vertexShader.glsl");
-  unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+  GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
   glCompileShader(vertexShader);
   int success;
@@ -207,7 +207,7 @@ void *view(void *arg) {
     printf("vertex shader compile fail\n");
   }
 
-  // unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+  // GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
   // compileShader("shader/vertexShader.glsl", vertexShader);
 
   // 片段着色器1
@@ -215,7 +215,7 @@ void *view(void *arg) {
   fragmentShaderSource[0] = getShaderSource("../shader/fragmentShaderColor.glsl");
   fragmentShaderSource[1] = getShaderSource("../shader/fragmentShaderGray.glsl");
   fragmentShaderSource[2] = getShaderSource("../shader/fragmentShaderTexture.glsl");
-  unsigned int fragmentShader[3];
+  GLuint fragmentShader[3];
   for (int i = 0; i < 3; i++) {
     fragmentShader[i] = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader[i], 1, &fragmentShaderSource[i], NULL);
@@ -225,11 +225,11 @@ void *view(void *arg) {
       glGetShaderInfoLog(fragmentShader[i], 512, NULL, infoLog);
       printf("fragment shader compile fail\n");
     }
-    // unsigned int fragmentShader[i] = glCreateShader(GL_FRAGMENT_SHADER);
+    // GLuint fragmentShader[i] = glCreateShader(GL_FRAGMENT_SHADER);
     // compileShader("shader/fragmentShader[i].glsl", fragmentShader[i]);
   }
 
-  // unsigned int shaderProgram[3];
+  // GLuint shaderProgram[3];
   for (int i = 0; i < 3; i++) {
     // 着色器程序
     shaderProgram[i] = glCreateProgram();
@@ -282,7 +282,7 @@ void *view(void *arg) {
               GL_DYNAMIC_DRAW);
 
   // 纹理
-  unsigned int texture[2];
+  GLuint texture[2];
   glGenTextures(2, texture);
   genTextureFromFile(GL_TEXTURE0, texture[0], "../img/apple.jpg");
   genTextureFromFile(GL_TEXTURE1, texture[1], "../img/orange.jpg");
