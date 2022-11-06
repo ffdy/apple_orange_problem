@@ -22,121 +22,152 @@ pthread_t threadAppleConsumer[N], threadOrangeConsumer[N];
 
 int id[N];
 
+void Ps(int *memId, int stateCode, int resultCode) {
+  while (1) {
+    printf("find %d\n", stateCode);
+    *memId = (*memId + 1) % N;
+    if (memState[*memId] != stateCode)
+      continue;
+    P(&lock);
+    if (memState[*memId] != stateCode) {
+      V(&lock);
+      continue;
+    }
+    if (stateCode == 0)
+      P(&memLock[*memId]);
+    else if (stateCode == 2)
+      P(&appleLock[*memId]);
+    else if (stateCode == 4)
+      P(&orangeLock[*memId]);
+    memState[*memState] = resultCode;
+    V(&lock);
+    break;
+  }
+}
+
 void *appleProducer(void *arg) {
   int id = *(int *)arg;
+  int memId = -1;
   while (1) {
     P(&lock);
     printf("apple producer%d: free\n", id);
     pcState[id][0] = 0;
     V(&lock);
-    sleep(rand() % 2 + 1);
+    sleep(rand() % 5 + 3);
 
     P(&lock);
     printf("apple producer%d: wait memory\n", id);
     pcState[id][0] = 1;
     V(&lock);
-    P(&memLock[id]);
+    // P(&memLock[id]);
+    Ps(&memId, 0, 1);
 
     P(&lock);
-    printf("apple producer%d: start to produce\n", id);
+    printf("apple producer%d: start to produce in mem%d\n", id, memId);
     pcState[id][0] = 2;
-    memState[id] = 1;
+    // memState[id] = 1;
     V(&lock);
     sleep(workTime[id][0]);
 
     P(&lock);
     printf("apple producer%d: done\n", id);
-    memState[id] = 2;
+    memState[memId] = 2;
     V(&lock);
-    V(&appleLock[id]);
+    V(&appleLock[memId]);
   }
 }
 
 void *orangeProducer(void *arg) {
   int id = *(int *)arg;
+  int memId = -1;
   while (1) {
     P(&lock);
     printf("orange producer%d: free\n", id);
     pcState[id][1] = 0;
     V(&lock);
-    sleep(rand() % 2 + 1);
+    sleep(rand() % 5 + 3);
 
     P(&lock);
     printf("orange producer%d: wait memory\n", id);
     pcState[id][1] = 1;
     V(&lock);
-    P(&memLock[id]);
+    // P(&memLock[id]);
+    Ps(&memId, 0, 3);
 
     P(&lock);
-    printf("orange producer%d: start to produce\n", id);
+    printf("orange producer%d: start to produce in mem%d\n", id, memId);
     pcState[id][1] = 2;
-    memState[id] = 3;
+    // memState[memId] = 3;
     V(&lock);
     sleep(workTime[id][1]);
 
     P(&lock);
     printf("orange producer%d: done\n", id);
-    memState[id] = 4;
+    memState[memId] = 4;
     V(&lock);
-    V(&orangeLock[id]);
+    V(&orangeLock[memId]);
   }
 }
 
 void *appleConsumer(void *arg) {
   int id = *(int *)arg;
+  int memId = -1;
   while (1) {
     P(&lock);
     printf("apple consumer%d: free\n", id);
     pcState[id][2] = 0;
     V(&lock);
-    sleep(rand() % 2 + 1);
+    sleep(rand() % 5 + 3);
 
     P(&lock);
     printf("apple comsumer%d: wait apple\n", id);
     pcState[id][2] = 1;
     V(&lock);
-    P(&appleLock[id]);
+    // P(&appleLock[id]);
+    Ps(&memId, 2, 5);
 
     P(&lock);
-    printf("apple consumer%d: start to consume\n", id);
+    printf("apple consumer%d: start to consume in mem%d\n", id, memId);
     pcState[id][2] = 2;
     V(&lock);
     sleep(workTime[id][2]);
 
     P(&lock);
     printf("apple consumer%d: done\n", id);
-    memState[id] = 0;
+    memState[memId] = 0;
     V(&lock);
-    V(&memLock[id]);
+    V(&memLock[memId]);
   }
 }
 
 void *orangeConsumer(void *arg) {
   int id = *(int *)arg;
+  int memId = -1;
   while (1) {
     P(&lock);
     printf("orange consumer%d: free\n", id);
     pcState[id][3] = 0;
     V(&lock);
-    sleep(rand() % 2 + 1);
+    sleep(rand() % 5 + 3);
 
     P(&lock);
     printf("orange comsumer%d: wait orange\n", id);
     pcState[id][3] = 1;
     V(&lock);
-    P(&orangeLock[id]);
+    // P(&orangeLock[id]);
+    Ps(&memId, 4, 6);
 
     P(&lock);
-    printf("orange consumer%d: start to consume\n", id);
+    printf("orange consumer%d: start to consume in mem%d\n", id, memId);
     pcState[id][3] = 2;
     V(&lock);
     sleep(workTime[id][3]);
 
     P(&lock);
     printf("orange consumer%d: done\n", id);
-    memState[id] = 0;
+    memState[memId] = 0;
     V(&lock);
-    V(&memLock[id]);
+    V(&memLock[memId]);
   }
 }
 

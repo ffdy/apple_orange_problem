@@ -2,8 +2,8 @@
 #define N 20
 
 // 状态矩阵，用于渲染图形
-// 内存状态，0空闲，1apple生产占用，2apple等待消费
-// 3orange生产占用，4orange等待消费
+// 内存状态，0空闲，1apple生产占用，2apple等待消费, 5apple消费占用
+// 3orange生产占用，4orange等待消费，6orange消费占用
 extern int memState[N];
 // // [x][0]apple生产者，[x][1]orange生产者
 // int pStatMatrix[N][2] = {0};
