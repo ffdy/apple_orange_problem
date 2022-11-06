@@ -13,6 +13,9 @@ int memState[N] = {0};
 // 0空闲，1阻塞，2消费中
 int pcState[N][4] = {0};
 // 生产者消费者工作颜色对应
+
+float workTime[N][4] = {0};
+
 float workColor[3][3] = {
     0.5f, 0.5f, 0.5f,
     1.0f, 1.0f, 0.0f,
