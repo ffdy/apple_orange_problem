@@ -22,35 +22,32 @@ pthread_t threadAppleConsumer[N], threadOrangeConsumer[N];
 
 int id[N];
 
-void Ps(int *memId, int stateCode, int resultCode) {
+void Ps(int *memId, int stateCode, int resultCode, int type) {
   while (1) {
-    // printf("find %d\n", stateCode);
-    *memId = (*memId + 1) % N;
+    *memId = (*memId + 1);
+    if (type == 0)
+      *memId = (*memId + 1) % (N / 2);
+    else if (type == 1) {
+      *memId = (*memId + 1) % N;
+      if (!(*memId))
+        *memId += N / 2;
+    }
     if (memState[*memId] != stateCode)
       continue;
     P(&lock);
-    // printf("get lock\n");
     if (memState[*memId] != stateCode) {
       V(&lock);
-      // printf("free lock1\n");
       continue;
     }
     if (stateCode == 0) {
-      // printf("\ttype 0 %d\n", memState[*memState]);
       P(&memLock[*memId]);
-      // printf("\tget 0\n");
     } else if (stateCode == 2) {
-      // printf("\ttype 2\n");
       P(&appleLock[*memId]);
-      // printf("\tget 2\n");
     } else if (stateCode == 4) {
-      // printf("\ttype 4\n");
       P(&orangeLock[*memId]);
-      // printf("\tget 4\n");
     }
     memState[*memId] = resultCode;
     V(&lock);
-    // printf("free lock2\n");
     break;
   }
 }
@@ -70,7 +67,7 @@ void *appleProducer(void *arg) {
     pcState[id][0] = 1;
     V(&lock);
     // P(&memLock[id]);
-    Ps(&memId, 0, 1);
+    Ps(&memId, 0, 1, 0);
 
     P(&lock);
     printf("apple producer%d: start to produce in mem%d\n", id, memId);
@@ -103,7 +100,7 @@ void *orangeProducer(void *arg) {
     pcState[id][1] = 1;
     V(&lock);
     // P(&memLock[id]);
-    Ps(&memId, 0, 3);
+    Ps(&memId, 0, 3, 1);
 
     P(&lock);
     printf("orange producer%d: start to produce in mem%d\n", id, memId);
@@ -137,7 +134,7 @@ void *appleConsumer(void *arg) {
     V(&lock);
     // P(&appleLock[id]);
     P(&appleSum);
-    Ps(&memId, 2, 5);
+    Ps(&memId, 2, 5, 0);
 
     P(&lock);
     printf("apple consumer%d: start to consume in mem%d\n", id, memId);
@@ -169,7 +166,7 @@ void *orangeConsumer(void *arg) {
     V(&lock);
     // P(&orangeLock[id]);
     P(&orangeSum);
-    Ps(&memId, 4, 6);
+    Ps(&memId, 4, 6, 1);
 
     P(&lock);
     printf("orange consumer%d: start to consume in mem%d\n", id, memId);
