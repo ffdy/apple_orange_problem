@@ -29,7 +29,7 @@ void *appleProducer(void *arg) {
     printf("apple producer%d: free\n", id);
     pcState[id][0] = 0;
     V(&lock);
-    sleep(rand() % 2 + 1);
+    sleep(rand() % 6 + 1);
 
     P(&lock);
     printf("apple producer%d: wait memory\n", id);
@@ -42,7 +42,7 @@ void *appleProducer(void *arg) {
     pcState[id][0] = 2;
     memState[id] = 1;
     V(&lock);
-    sleep(rand() % 2 + 1);
+    sleep(rand() % 6 + 1);
 
     P(&lock);
     printf("apple producer%d: done\n", id);
@@ -59,7 +59,7 @@ void *orangeProducer(void *arg) {
     printf("orange producer%d: free\n", id);
     pcState[id][1] = 0;
     V(&lock);
-    sleep(rand() % 2 + 1);
+    sleep(rand() % 6 + 1);
 
     P(&lock);
     printf("orange producer%d: wait memory\n", id);
@@ -72,7 +72,7 @@ void *orangeProducer(void *arg) {
     pcState[id][1] = 2;
     memState[id] = 3;
     V(&lock);
-    sleep(rand() % 2 + 1);
+    sleep(rand() % 6 + 1);
 
     P(&lock);
     printf("orange producer%d: done\n", id);

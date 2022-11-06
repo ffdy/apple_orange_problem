@@ -16,23 +16,26 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "lib/stb_image.h"
 
-// #define N 20
-
 pthread_t view_thread;
 
 float pcVertices[] = {
-  //-坐标----  纹理坐标----
-  0.0f, 0.3f, 0.0f, 1.0f,
-  0.0f, 0.0f, 0.0f, 0.0f,
-  0.3f, 0.0f, 1.0f, 0.0f,
-  0.3f, 0.3f, 1.0f, 1.0f 
+    //-坐标----  纹理坐标----
+    // 0.0f, 0.3f, 0.0f, 1.0f,
+    // 0.0f, 0.0f, 0.0f, 0.0f,
+    // 0.3f, 0.0f, 1.0f, 0.0f,
+    // 0.3f, 0.3f, 1.0f, 1.0f
+    -0.741f, 0.926, 0.0f, 1.0f,
+    -0.741f, 0.838, 0.0f, 0.0f, 
+    -0.634f, 0.838, 1.0f, 0.0f,
+    -0.634f, 0.926f, 1.0f, 1.0f
 };
 
+
 float memVertices[] = {
-  0.0f, 0.4f, 0.0f, 1.0f,
-  0.0f, 0.0f, 0.0f, 0.0f,
-  0.4f, 0.0f, 1.0f, 0.0f,
-  0.4f, 0.4f, 1.0f, 1.0f
+  -0.732f, -0.059f, 0.0f, 1.0f,
+  -0.732f, -0.25f, 0.0f, 0.0f,
+  -0.518f, -0.25f, 1.0f, 0.0f,
+  -0.518f, -0.059f, 1.0f, 1.0f
 };
 
 unsigned int indices[] = {
@@ -41,15 +44,34 @@ unsigned int indices[] = {
 };
 
 float pcOffset[N][4][2] = {
-  -1.0f,  0.7f,
-  -1.0f, -1.0f,
-   0.7f, -1.0f,
-   0.7f,  0.7f
+  // -1.0f,  0.7f,
+  // -1.0f, -1.0f,
+  //  0.7f, -1.0f,
+  //  0.7f,  0.7f
 };
 
-float memOffset[N][2] = {
-  -0.2f, -0.2f
-};
+float memOffset[N][2] = {-0.2f, -0.2f};
+
+float pcDw = 0.125f, pcDH = 0.118f;
+float memDw = 0.25f, memDh = 0.221f;
+
+void view_data() {
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 20; j += 2) {
+      pcOffset[j][i][0] = (int)(j / 2) * pcDw;
+      pcOffset[j + 1][i][0] = (int)(j / 2) * pcDw;
+      pcOffset[j][i][1] = 0 - 2 * i * pcDH;
+      pcOffset[j + 1][i][1] = 0 - (2 * i + 1) * pcDH;
+    }
+
+    for (int j = 0; j < 20; j += 4) {
+      for (int k = 0; k < 4; k++) {
+        memOffset[j + k][0] = (int)(j / 4) * memDw;
+        memOffset[j + k][1] = 0 - k * memDh;
+      }
+    }
+  }
+}
 
 GLuint VAO[2], VBO[2], EBO[2];
 GLuint shaderProgram[3];
@@ -176,6 +198,8 @@ void processInput(GLFWwindow *window) {
 }
 
 void *view(void *arg) {
+  view_data();
+
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
