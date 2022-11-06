@@ -170,13 +170,13 @@ void drawOnce(GLFWwindow *window) {
     } else if (memState[i] == 1) {
       glUseProgram(shaderProgram[1]);
       glUniform1i(glGetUniformLocation(shaderProgram[1], "textureImg"), 0);
-    } else if (memState[i] == 2) {
+    } else if (memState[i] == 2 || memState[i] == 5) {
       glUseProgram(shaderProgram[2]);
       glUniform1i(glGetUniformLocation(shaderProgram[2], "textureImg"), 0);
     } else if (memState[i] == 3) {
       glUseProgram(shaderProgram[1]);
       glUniform1i(glGetUniformLocation(shaderProgram[1], "textureImg"), 1);
-    } else if (memState[i] == 4) {
+    } else if (memState[i] == 4 || memState[i] == 6) {
       glUseProgram(shaderProgram[2]);
       glUniform1i(glGetUniformLocation(shaderProgram[2], "textureImg"), 1);
     }

@@ -12,8 +12,8 @@
 // 内存锁
 struct Semaphome memLock[N];
 // 同步锁
-struct Semaphome appleLock[N];
-struct Semaphome orangeLock[N];
+struct Semaphome appleLock[N], appleSum;
+struct Semaphome orangeLock[N], orangeSum;
 // 临界区锁
 struct Semaphome lock;
 // 线程
@@ -24,23 +24,33 @@ int id[N];
 
 void Ps(int *memId, int stateCode, int resultCode) {
   while (1) {
-    printf("find %d\n", stateCode);
+    // printf("find %d\n", stateCode);
     *memId = (*memId + 1) % N;
     if (memState[*memId] != stateCode)
       continue;
     P(&lock);
+    // printf("get lock\n");
     if (memState[*memId] != stateCode) {
       V(&lock);
+      // printf("free lock1\n");
       continue;
     }
-    if (stateCode == 0)
+    if (stateCode == 0) {
+      // printf("\ttype 0 %d\n", memState[*memState]);
       P(&memLock[*memId]);
-    else if (stateCode == 2)
+      // printf("\tget 0\n");
+    } else if (stateCode == 2) {
+      // printf("\ttype 2\n");
       P(&appleLock[*memId]);
-    else if (stateCode == 4)
+      // printf("\tget 2\n");
+    } else if (stateCode == 4) {
+      // printf("\ttype 4\n");
       P(&orangeLock[*memId]);
-    memState[*memState] = resultCode;
+      // printf("\tget 4\n");
+    }
+    memState[*memId] = resultCode;
     V(&lock);
+    // printf("free lock2\n");
     break;
   }
 }
@@ -74,6 +84,7 @@ void *appleProducer(void *arg) {
     memState[memId] = 2;
     V(&lock);
     V(&appleLock[memId]);
+    V(&appleSum);
   }
 }
 
@@ -106,6 +117,7 @@ void *orangeProducer(void *arg) {
     memState[memId] = 4;
     V(&lock);
     V(&orangeLock[memId]);
+    V(&orangeSum);
   }
 }
 
@@ -124,6 +136,7 @@ void *appleConsumer(void *arg) {
     pcState[id][2] = 1;
     V(&lock);
     // P(&appleLock[id]);
+    P(&appleSum);
     Ps(&memId, 2, 5);
 
     P(&lock);
@@ -155,6 +168,7 @@ void *orangeConsumer(void *arg) {
     pcState[id][3] = 1;
     V(&lock);
     // P(&orangeLock[id]);
+    P(&orangeSum);
     Ps(&memId, 4, 6);
 
     P(&lock);
@@ -175,10 +189,10 @@ void proc_start() {
 
   // 初始化生产者消费者的生产时间
   for (int i = 0; i < N; i++) {
-    workTime[i][0] = rand() % 6 + 1;
-    workTime[i][1] = rand() % 6 + 1;
-    workTime[i][2] = rand() % 2 + 1;
-    workTime[i][3] = rand() % 2 + 1;
+    workTime[i][0] = rand() % 6 + 30;
+    workTime[i][1] = rand() % 6 + 30;
+    workTime[i][2] = rand() % 2 + 4;
+    workTime[i][3] = rand() % 2 + 4;
   }
 
   // 初始化信号量
@@ -188,6 +202,8 @@ void proc_start() {
     initSem(&appleLock[i], 0);
     initSem(&orangeLock[i], 0);
   }
+  initSem(&appleSum, 0);
+  initSem(&orangeSum, 0);
 
   for (int i = 0; i < N; i++) {
     // id[N]不能是局部
