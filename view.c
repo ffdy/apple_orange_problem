@@ -16,6 +16,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "lib/stb_image.h"
 
+// #define N 20
+
 pthread_t view_thread;
 
 float pcVertices[] = {
@@ -39,10 +41,10 @@ unsigned int indices[] = {
 };
 
 float pcOffset[N][4][2] = {
-  -0.7f,  0.4f,
-  -0.7f, -0.7f,
-   0.4f, -0.7f,
-   0.4f,  0.4f
+  -1.0f,  0.7f,
+  -1.0f, -1.0f,
+   0.7f, -1.0f,
+   0.7f,  0.7f
 };
 
 float memOffset[N][2] = {
@@ -126,7 +128,7 @@ void drawOnce(GLFWwindow *window) {
   glClear(GL_COLOR_BUFFER_BIT);
 
   glUseProgram(shaderProgram[0]);
-  glBindVertexArray(VAO[1]);
+  glBindVertexArray(VAO[0]);
 
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < 4; j++) {
@@ -156,7 +158,7 @@ void drawOnce(GLFWwindow *window) {
       glUseProgram(shaderProgram[2]);
       glUniform1i(glGetUniformLocation(shaderProgram[2], "textureImg"), 1);
     }
-    glBindVertexArray(VAO[0]);
+    glBindVertexArray(VAO[1]);
     glUniform2f(glGetUniformLocation(shaderProgram[0], "offset"),
                 memOffset[i][0], memOffset[i][1]);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
