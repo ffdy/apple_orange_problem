@@ -57,7 +57,7 @@ void Ps(int *memId, int stateCode, int resultCode) {
 
 void *appleProducer(void *arg) {
   int id = *(int *)arg;
-  int memId = -1;
+  int memId = id - 1;
   while (1) {
     P(&lock);
     printf("apple producer%d: free\n", id);
@@ -90,7 +90,7 @@ void *appleProducer(void *arg) {
 
 void *orangeProducer(void *arg) {
   int id = *(int *)arg;
-  int memId = -1;
+  int memId = id - 1;
   while (1) {
     P(&lock);
     printf("orange producer%d: free\n", id);
@@ -123,7 +123,7 @@ void *orangeProducer(void *arg) {
 
 void *appleConsumer(void *arg) {
   int id = *(int *)arg;
-  int memId = -1;
+  int memId = id - 1;
   while (1) {
     P(&lock);
     printf("apple consumer%d: free\n", id);
@@ -155,7 +155,7 @@ void *appleConsumer(void *arg) {
 
 void *orangeConsumer(void *arg) {
   int id = *(int *)arg;
-  int memId = -1;
+  int memId = id - 1;
   while (1) {
     P(&lock);
     printf("orange consumer%d: free\n", id);
