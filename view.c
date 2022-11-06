@@ -1,5 +1,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
 #include <math.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -15,6 +16,9 @@
 // 纹理导入
 #define STB_IMAGE_IMPLEMENTATION
 #include "lib/stb_image.h"
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "lib/stb_truetype.h"
 
 pthread_t view_thread;
 
@@ -51,6 +55,7 @@ float memOffset[N][2] = {
 
 GLuint VAO[2], VBO[2], EBO[2];
 GLuint shaderProgram[3];
+GLuint fontShaderProgram;
 
 char *getShaderSource(const char *path) {
   FILE *file = fopen(path, "r");
@@ -119,6 +124,32 @@ void genTextureFromColor(GLuint textureIndex, GLuint textureID,
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 250, 250, 0, GL_RGB,
              GL_UNSIGNED_BYTE, data);
   glGenerateMipmap(GL_TEXTURE_2D); // 自动生成多级渐远纹理
+}
+
+GLubyte fontBuffer[1 << 20];
+GLubyte temp_bitmap[1 << 20];
+stbtt_bakedchar cdata[96];
+void genTextureFromTTF(GLuint textureIndex, GLuint textureID,
+                       const char *ttf_path, GLfloat font_height) {
+  stbtt_BakeFontBitmap(fontBuffer, 0, font_height, temp_bitmap, 1024, 1024, 32,
+                       96, cdata);
+  glActiveTexture(textureIndex);
+  glBindTexture(GL_TEXTURE_2D, textureID);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 1024, 1024, 0, GL_ALPHA,
+               GL_UNSIGNED_BYTE, temp_bitmap);
+  glGenerateMipmap(GL_TEXTURE_2D);
+}
+// todo
+void drawFont() {
+  glUseProgram(fontShaderProgram);
+  GLuint FVAO, FVBO;
+  
+
+  // glad_glUniform2f(glad_glGetUniformLocation(fontShaderProgram, "vertex"), )
 }
 
 void drawOnce(GLFWwindow *window) {
@@ -209,6 +240,11 @@ void *view(void *arg) {
 
   // GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
   // compileShader("shader/vertexShader.glsl", vertexShader);
+  const char *fontVertexShaderSource =
+      getShaderSource("../shader/fontVertexShader.glsl");
+  GLuint fontVertexShader = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(fontVertexShader, 1, &fontVertexShaderSource, NULL);
+  glCompileShader(fontVertexShader);
 
   // 片段着色器1
   const char *fragmentShaderSource[3];
@@ -229,6 +265,12 @@ void *view(void *arg) {
     // compileShader("shader/fragmentShader[i].glsl", fragmentShader[i]);
   }
 
+  const char *fontFragmentShaderSource =
+      getShaderSource("../shader/fontFragmentShader.glsl");
+  GLuint fontFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(fontFragmentShader, 1, &fontFragmentShaderSource, NULL);
+  glCompileShader(fontFragmentShader);
+
   // GLuint shaderProgram[3];
   for (int i = 0; i < 3; i++) {
     // 着色器程序
@@ -244,10 +286,20 @@ void *view(void *arg) {
 
     // glUseProgram(shaderProgram); //使用的时候调用
   }
+
+  fontShaderProgram = glCreateProgram();
+  glAttachShader(fontShaderProgram, fontVertexShader);
+  glAttachShader(fontShaderProgram, fontFragmentShader);
+  glLinkProgram(fontShaderProgram);
+  // glGetProgramiv(fontShaderProgram, GL_COMPILE_STATUS)
+
   glDeleteShader(vertexShader);
   for (int i = 0; i < 3; i++) {
     glDeleteShader(fragmentShader[i]);
   }
+
+  glDeleteShader(fontVertexShader);
+  glDeleteShader(fontFragmentShader);
 
   glGenVertexArrays(2, VAO);
   glGenBuffers(2, VBO);
@@ -282,10 +334,11 @@ void *view(void *arg) {
               GL_DYNAMIC_DRAW);
 
   // 纹理
-  GLuint texture[2];
-  glGenTextures(2, texture);
+  GLuint texture[3];
+  glGenTextures(3, texture);
   genTextureFromFile(GL_TEXTURE0, texture[0], "../img/apple.jpg");
   genTextureFromFile(GL_TEXTURE1, texture[1], "../img/orange.jpg");
+  genTextureFromTTF(GL_TEXTURE2, texture[2], "../ttf/CascadiaCode.ttf", 100);
 
   while (!glfwWindowShouldClose(window)) {
     processInput(window);
@@ -298,6 +351,7 @@ void *view(void *arg) {
   for (int i = 0; i < 3; i++) {
     glDeleteProgram(shaderProgram[i]);
   }
+  glDeleteProgram(fontShaderProgram);
 
   glfwTerminate();
 
