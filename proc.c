@@ -6,6 +6,7 @@
 
 // 信号量
 #include "lib/sem.h"
+#include "lib/list.h"
 #include "data.h"
 #include "proc.h"
 
@@ -19,6 +20,10 @@ struct Semaphome lock;
 // 线程
 pthread_t threadAppleProducer[N], threadOrangeProducer[N];
 pthread_t threadAppleConsumer[N], threadOrangeConsumer[N];
+
+// 内存管理器的链表
+struct List freeMem, appleMem, orangeMem;
+struct Node memNode[N];
 
 int id[N];
 
@@ -156,6 +161,16 @@ void proc_start() {
     initSem(&memLock[i], 1);
     initSem(&appleLock[i], 0);
     initSem(&orangeLock[i], 0);
+  }
+
+  // 初始化内存管理器
+  initList(&freeMem);
+  initList(&appleMem);
+  initList(&orangeMem);
+  for (int i = 0; i < N; i++) {
+    memNode[i].memId = i;
+    memNode[i].tail = NULL;
+    VList(&freeMem, &memNode[i]);
   }
 
   for (int i = 0; i < N; i++) {
