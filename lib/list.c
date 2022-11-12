@@ -1,6 +1,5 @@
 #include "list.h"
 #include <stdio.h>
-#include <malloc.h>
 
 void initList(struct List *list) {
   initSem(&list->lock, 1);
@@ -13,27 +12,16 @@ void PList(struct List *list, int *elem) {
   P(&list->memSum);
   P(&list->lock);
   *elem = list->head.tail->memId;
-  struct Node *node = list->head.tail;
   list->head.tail = list->head.tail->tail;
-  if (node == list->tail)
+  if (*elem == list->tail->memId)
     list->tail = &list->head;
-  free(node);
   V(&list->lock);
 }
 
-void VList(struct List *list, int elem) {
+void VList(struct List *list, struct Node *elem) {
   P(&list->lock);
-  ShowList(list, "<", -1, -1);
-  printf("%p %p %p\n", list->head.tail, list->tail, &list->head);
-  struct Node *node = (struct Node *)malloc(sizeof(struct Node));
-  while (node == NULL)
-    node = (struct Node *)malloc(sizeof(struct Node));
-  node->memId = elem;
-  node->tail = NULL;
-  // printf("node:%3d %3d", node->memId)
-  list->tail->tail = node;
-  list->tail = node;
-  ShowList(list, ">", -1, -1);
+  list->tail->tail = elem;
+  list->tail = elem;
   V(&list->lock);
   V(&list->memSum);
 }

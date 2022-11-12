@@ -32,9 +32,7 @@ void *appleProducer(void *arg) {
     printf("apple producer%d: wait memory\n", id);
     pcState[id][0] = 1;
     V(&lock);
-    ShowList(&freeMem, "afM1", id, memId);
     PList(&freeMem, &memId);
-    ShowList(&freeMem, "afM2", id, memId);
 
     P(&lock);
     printf("apple producer%d: start to produce in mem%d\n", id, memId);
@@ -47,9 +45,7 @@ void *appleProducer(void *arg) {
     printf("apple producer%d: done\n", id);
     memState[memId] = 2;
     V(&lock);
-    ShowList(&appleMem, "aaM1", id, memId);
-    VList(&appleMem, memId);
-    ShowList(&appleMem, "aaM2", id, memId);
+    VList(&appleMem, &memNode[memId]);
   }
 }
 
@@ -63,9 +59,7 @@ void *orangeProducer(void *arg) {
     printf("orange producer%d: wait memory\n", id);
     pcState[id][1] = 1;
     V(&lock);
-    ShowList(&freeMem, "ofM1", id, memId);
     PList(&freeMem, &memId);
-    ShowList(&freeMem, "ofM2", id, memId);
 
     P(&lock);
     printf("orange producer%d: start to produce in mem%d\n", id, memId);
@@ -78,9 +72,7 @@ void *orangeProducer(void *arg) {
     printf("orange producer%d: done\n", id);
     memState[memId] = 4;
     V(&lock);
-    ShowList(&orangeMem, "ooM1", id, memId);
-    VList(&orangeMem, memId);
-    ShowList(&orangeMem, "ooM2", id, memId);
+    VList(&orangeMem, &memNode[memId]);
   }
 }
 
@@ -94,9 +86,7 @@ void *appleConsumer(void *arg) {
     printf("apple comsumer%d: wait apple\n", id);
     pcState[id][2] = 1;
     V(&lock);
-    ShowList(&appleMem, "acaM1", id, memId);
     PList(&appleMem, &memId);
-    ShowList(&appleMem, "acaM2", id, memId);
 
     P(&lock);
     printf("apple consumer%d: start to consume in mem%d\n", id, memId);
@@ -109,9 +99,7 @@ void *appleConsumer(void *arg) {
     printf("apple consumer%d: done\n", id);
     memState[memId] = 0;
     V(&lock);
-    ShowList(&freeMem, "acfM1", id, memId);
-    VList(&freeMem, memId);
-    ShowList(&freeMem, "acfM2", id, memId);
+    VList(&freeMem, &memNode[memId]);
   }
 }
 
@@ -125,9 +113,7 @@ void *orangeConsumer(void *arg) {
     printf("orange comsumer%d: wait orange\n", id);
     pcState[id][3] = 1;
     V(&lock);
-    ShowList(&orangeMem, "ocoM1", id, memId);
     PList(&orangeMem, &memId);
-    ShowList(&orangeMem, "ocoM2", id, memId);
 
     P(&lock);
     printf("orange consumer%d: start to consume in mem%d\n", id, memId);
@@ -140,9 +126,7 @@ void *orangeConsumer(void *arg) {
     printf("orange consumer%d: done\n", id);
     memState[memId] = 0;
     V(&lock);
-    ShowList(&freeMem, "ocfM1", id, memId);
-    VList(&freeMem, memId);
-    ShowList(&freeMem, "ocfM2", id, memId);
+    VList(&freeMem, &memNode[memId]);
   }
 }
 
@@ -171,7 +155,7 @@ void proc_start() {
   for (int i = 0; i < N; i++) {
     memNode[i].memId = i;
     memNode[i].tail = NULL;
-    VList(&freeMem, i);
+    VList(&freeMem, &memNode[i]);
   }
 
   // ShowList(&freeMem, "fM");
