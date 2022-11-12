@@ -5,8 +5,8 @@
 #include <unistd.h>
 
 // 信号量
-#include "lib/sem.h"
 #include "data.h"
+#include "lib/sem.h"
 #include "proc.h"
 
 // 内存锁
@@ -22,32 +22,57 @@ pthread_t threadAppleConsumer[N], threadOrangeConsumer[N];
 
 int id[N];
 
+// 记录两类生产消费者所占用的内存的边界
+int appleBorder = 0, orangeBorder = N - 1;
+
 void Ps(int *memId, int stateCode, int resultCode, int type) {
+  *memId = (type ? N : -1);
   while (1) {
-    // *memId = (*memId + 1);
-    if (type == 0)
-      *memId = (*memId + 1) % (N / 2);
-    else if (type == 1) {
-      *memId = (*memId + 1) % N;
-      if (!(*memId))
-        *memId += N / 2;
-    }
-    if (memState[*memId] != stateCode)
-      continue;
-    P(&lock);
-    if (memState[*memId] != stateCode) {
-      V(&lock);
-      continue;
-    }
-    if (stateCode == 0) {
-      P(&memLock[*memId]);
-    } else if (stateCode == 2) {
-      P(&appleLock[*memId]);
-    } else if (stateCode == 4) {
-      P(&orangeLock[*memId]);
+    if (type == 0) { // apple
+      // *memId = (*memId + 1) % (appleBorder + 1);
+      (*memId)++;
+      if (*memId > appleBorder)
+        *memId = 0;
+      if (memState[*memId] != stateCode)
+        continue;
+      P(&lock);
+      if (memState[*memId] != stateCode) {
+        V(&lock);
+        continue;
+      }
+      if (stateCode == 0) {
+        P(&memLock[*memId]);
+        if ((*memId == appleBorder) && appleBorder < N - 1 && appleBorder < orangeBorder)
+          appleBorder++;
+      } else if (stateCode == 2) {
+        P(&appleLock[*memId]);
+        // if ((*memId == appleBorder) && appleBorder)
+        //   appleBorder--;
+      }
+    } else if (type == 1) { // orange
+      (*memId)--;
+      if (*memId < orangeBorder)
+        *memId = N - 1;
+      if (memState[*memId] != stateCode)
+        continue;
+      P(&lock);
+      if (memState[*memId] != stateCode) {
+        V(&lock);
+        continue;
+      }
+      if (stateCode == 0) {
+        P(&memLock[*memId]);
+        if ((*memId == orangeBorder) && orangeBorder && appleBorder < orangeBorder)
+          orangeBorder--;
+      } else if (stateCode == 4) {
+        P(&orangeLock[*memId]);
+        // if ((*memId == orangeBorder) && orangeBorder < N - 1)
+        //   orangeBorder++;
+      }
     }
     memState[*memId] = resultCode;
     V(&lock);
+    printf("%d %d\n", appleBorder, orangeBorder);
     break;
   }
 }
@@ -145,6 +170,8 @@ void *appleConsumer(void *arg) {
     P(&lock);
     printf("apple consumer%d: done\n", id);
     memState[memId] = 0;
+    if ((memId == appleBorder) && appleBorder && memState[memId - 1] == 0)
+      appleBorder--;
     V(&lock);
     V(&memLock[memId]);
   }
@@ -177,6 +204,8 @@ void *orangeConsumer(void *arg) {
     P(&lock);
     printf("orange consumer%d: done\n", id);
     memState[memId] = 0;
+    if ((memId == orangeBorder) && orangeBorder < N - 1 && memState[memId + 1] == 0)
+      orangeBorder++;
     V(&lock);
     V(&memLock[memId]);
   }
@@ -186,10 +215,10 @@ void proc_start() {
 
   // 初始化生产者消费者的生产时间
   for (int i = 0; i < N; i++) {
-    workTime[i][0] = rand() % 6 + 30;
-    workTime[i][1] = rand() % 6 + 30;
-    workTime[i][2] = rand() % 2 + 4;
-    workTime[i][3] = rand() % 2 + 4;
+    workTime[i][0] = rand() % 6 + 2;
+    workTime[i][1] = rand() % 6 + 2;
+    workTime[i][2] = rand() % 2 + 2;
+    workTime[i][3] = rand() % 2 + 2;
   }
 
   // 初始化信号量
