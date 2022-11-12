@@ -10,11 +10,6 @@
 #include "data.h"
 #include "proc.h"
 
-// 内存锁
-struct Semaphome memLock[N];
-// 同步锁
-struct Semaphome appleLock[N], appleSum;
-struct Semaphome orangeLock[N], orangeSum;
 // 临界区锁
 struct Semaphome lock;
 // 线程
@@ -27,60 +22,24 @@ struct Node memNode[N];
 
 int id[N];
 
-void Ps(int *memId, int stateCode, int resultCode) {
-  while (1) {
-    // printf("find %d\n", stateCode);
-    *memId = (*memId + 1) % N;
-    if (memState[*memId] != stateCode)
-      continue;
-    P(&lock);
-    // printf("get lock\n");
-    if (memState[*memId] != stateCode) {
-      V(&lock);
-      // printf("free lock1\n");
-      continue;
-    }
-    if (stateCode == 0) {
-      // printf("\ttype 0 %d\n", memState[*memState]);
-      P(&memLock[*memId]);
-      // printf("\tget 0\n");
-    } else if (stateCode == 2) {
-      // printf("\ttype 2\n");
-      P(&appleLock[*memId]);
-      // printf("\tget 2\n");
-    } else if (stateCode == 4) {
-      // printf("\ttype 4\n");
-      P(&orangeLock[*memId]);
-      // printf("\tget 4\n");
-    }
-    memState[*memId] = resultCode;
-    V(&lock);
-    // printf("free lock2\n");
-    break;
-  }
-}
-
 void *appleProducer(void *arg) {
   int id = *(int *)arg;
-  int memId = id - 1;
+  int memId;
   while (1) {
     P(&lock);
     printf("apple producer%d: free\n", id);
     pcState[id][0] = 0;
-    V(&lock);
-    sleep(rand() % 5 + 3);
-
-    P(&lock);
     printf("apple producer%d: wait memory\n", id);
     pcState[id][0] = 1;
     V(&lock);
-    // P(&memLock[id]);
-    Ps(&memId, 0, 1);
+    ShowList(&freeMem, "afM1", id, memId);
+    PList(&freeMem, &memId);
+    ShowList(&freeMem, "afM2", id, memId);
 
     P(&lock);
     printf("apple producer%d: start to produce in mem%d\n", id, memId);
     pcState[id][0] = 2;
-    // memState[id] = 1;
+    memState[memId] = 1;
     V(&lock);
     sleep(workTime[id][0]);
 
@@ -88,32 +47,30 @@ void *appleProducer(void *arg) {
     printf("apple producer%d: done\n", id);
     memState[memId] = 2;
     V(&lock);
-    V(&appleLock[memId]);
-    V(&appleSum);
+    ShowList(&appleMem, "aaM1", id, memId);
+    VList(&appleMem, memId);
+    ShowList(&appleMem, "aaM2", id, memId);
   }
 }
 
 void *orangeProducer(void *arg) {
   int id = *(int *)arg;
-  int memId = id - 1;
+  int memId;
   while (1) {
     P(&lock);
     printf("orange producer%d: free\n", id);
     pcState[id][1] = 0;
-    V(&lock);
-    sleep(rand() % 5 + 3);
-
-    P(&lock);
     printf("orange producer%d: wait memory\n", id);
     pcState[id][1] = 1;
     V(&lock);
-    // P(&memLock[id]);
-    Ps(&memId, 0, 3);
+    ShowList(&freeMem, "ofM1", id, memId);
+    PList(&freeMem, &memId);
+    ShowList(&freeMem, "ofM2", id, memId);
 
     P(&lock);
     printf("orange producer%d: start to produce in mem%d\n", id, memId);
     pcState[id][1] = 2;
-    // memState[memId] = 3;
+    memState[memId] = 3;
     V(&lock);
     sleep(workTime[id][1]);
 
@@ -121,32 +78,30 @@ void *orangeProducer(void *arg) {
     printf("orange producer%d: done\n", id);
     memState[memId] = 4;
     V(&lock);
-    V(&orangeLock[memId]);
-    V(&orangeSum);
+    ShowList(&orangeMem, "ooM1", id, memId);
+    VList(&orangeMem, memId);
+    ShowList(&orangeMem, "ooM2", id, memId);
   }
 }
 
 void *appleConsumer(void *arg) {
   int id = *(int *)arg;
-  int memId = id - 1;
+  int memId;
   while (1) {
     P(&lock);
     printf("apple consumer%d: free\n", id);
     pcState[id][2] = 0;
-    V(&lock);
-    sleep(rand() % 5 + 3);
-
-    P(&lock);
     printf("apple comsumer%d: wait apple\n", id);
     pcState[id][2] = 1;
     V(&lock);
-    // P(&appleLock[id]);
-    P(&appleSum);
-    Ps(&memId, 2, 5);
+    ShowList(&appleMem, "acaM1", id, memId);
+    PList(&appleMem, &memId);
+    ShowList(&appleMem, "acaM2", id, memId);
 
     P(&lock);
     printf("apple consumer%d: start to consume in mem%d\n", id, memId);
     pcState[id][2] = 2;
+    memState[memId] = 5;
     V(&lock);
     sleep(workTime[id][2]);
 
@@ -154,31 +109,30 @@ void *appleConsumer(void *arg) {
     printf("apple consumer%d: done\n", id);
     memState[memId] = 0;
     V(&lock);
-    V(&memLock[memId]);
+    ShowList(&freeMem, "acfM1", id, memId);
+    VList(&freeMem, memId);
+    ShowList(&freeMem, "acfM2", id, memId);
   }
 }
 
 void *orangeConsumer(void *arg) {
   int id = *(int *)arg;
-  int memId = id - 1;
+  int memId;
   while (1) {
     P(&lock);
     printf("orange consumer%d: free\n", id);
     pcState[id][3] = 0;
-    V(&lock);
-    sleep(rand() % 5 + 3);
-
-    P(&lock);
     printf("orange comsumer%d: wait orange\n", id);
     pcState[id][3] = 1;
     V(&lock);
-    // P(&orangeLock[id]);
-    P(&orangeSum);
-    Ps(&memId, 4, 6);
+    ShowList(&orangeMem, "ocoM1", id, memId);
+    PList(&orangeMem, &memId);
+    ShowList(&orangeMem, "ocoM2", id, memId);
 
     P(&lock);
     printf("orange consumer%d: start to consume in mem%d\n", id, memId);
     pcState[id][3] = 2;
+    memState[memId] = 6;
     V(&lock);
     sleep(workTime[id][3]);
 
@@ -186,7 +140,9 @@ void *orangeConsumer(void *arg) {
     printf("orange consumer%d: done\n", id);
     memState[memId] = 0;
     V(&lock);
-    V(&memLock[memId]);
+    ShowList(&freeMem, "ocfM1", id, memId);
+    VList(&freeMem, memId);
+    ShowList(&freeMem, "ocfM2", id, memId);
   }
 }
 
@@ -194,21 +150,19 @@ void proc_start() {
 
   // 初始化生产者消费者的生产时间
   for (int i = 0; i < N; i++) {
-    workTime[i][0] = rand() % 6 + 30;
-    workTime[i][1] = rand() % 6 + 30;
-    workTime[i][2] = rand() % 2 + 4;
-    workTime[i][3] = rand() % 2 + 4;
+    workTime[i][0] = rand() % 2 + 2;
+    workTime[i][1] = rand() % 2 + 2;
+    workTime[i][2] = rand() % 2 + 2;
+    workTime[i][3] = rand() % 2 + 2;
   }
 
   // 初始化信号量
   initSem(&lock, 1);
-  for (int i = 0; i < N; i++) {
-    initSem(&memLock[i], 1);
-    initSem(&appleLock[i], 0);
-    initSem(&orangeLock[i], 0);
-  }
-  initSem(&appleSum, 0);
-  initSem(&orangeSum, 0);
+  // for (int i = 0; i < N; i++) {
+  //   initSem(&memLock[i], 1);
+  //   initSem(&appleLock[i], 0);
+  //   initSem(&orangeLock[i], 0);
+  // }
 
   // 初始化内存管理器
   initList(&freeMem);
@@ -217,8 +171,12 @@ void proc_start() {
   for (int i = 0; i < N; i++) {
     memNode[i].memId = i;
     memNode[i].tail = NULL;
-    VList(&freeMem, &memNode[i]);
+    VList(&freeMem, i);
   }
+
+  // ShowList(&freeMem, "fM");
+  // ShowList(&appleMem, "aM");
+  // ShowList(&orangeMem, "oM");
 
   for (int i = 0; i < N; i++) {
     // id[N]不能是局部

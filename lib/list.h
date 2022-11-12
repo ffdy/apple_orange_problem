@@ -15,6 +15,7 @@ struct List {
 };
 #endif
 
-void initList(struct List *);
-void PList(struct List *, int *);
-void VList(struct List *, struct Node *);
+void initList(struct List *list);
+void PList(struct List *list, int *elem);
+void VList(struct List *list, int elem);
+void ShowList(struct List *list, char *tag, int id, int memId);
