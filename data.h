@@ -1,5 +1,5 @@
 // 内存数量
-#define N 1
+#define N 20
 
 // 状态矩阵，用于渲染图形
 // 内存状态，0空闲，1apple生产占用，2apple等待消费
@@ -15,4 +15,5 @@ extern int memState[N];
 // 0空闲，1阻塞，2消费中
 extern int pcState[N][4];
 // 生产者消费者工作颜色对应
+extern float workTime[N][4];
 extern float workColor[3][3];
