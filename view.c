@@ -17,8 +17,8 @@
 // 纹理导入
 #define STB_IMAGE_IMPLEMENTATION
 #include "lib/stb_image.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "lib/stb_image_write.h"
+// #define STB_IMAGE_WRITE_IMPLEMENTATION
+// #include "lib/stb_image_write.h"
 // 文本渲染
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "lib/stb_truetype.h"
