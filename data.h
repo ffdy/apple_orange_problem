@@ -15,5 +15,6 @@ extern int memState[N];
 // 0空闲，1阻塞，2消费中
 extern int pcState[N][4];
 // 生产者消费者工作颜色对应
-extern float workTime[N][4];
+extern int workTime[N][4];
+extern int freeTime[N][4];
 extern float workColor[3][3];
