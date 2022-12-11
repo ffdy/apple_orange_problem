@@ -14,8 +14,11 @@ int memState[N] = {0};
 int pcState[N][4] = {0};
 // 生产者消费者工作颜色对应
 
-float workTime[N][4] = {0};
-float freeTime[N][4] = {0};
+int workTime[N][4] = {0};
+int freeTime[N][4] = {0};
+
+// int mem_host[N];
+int pc_target[N][4];
 
 float workColor[3][3] = {
     0.5f, 0.5f, 0.5f,

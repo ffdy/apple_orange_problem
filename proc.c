@@ -29,7 +29,7 @@ void *appleProducer(void *arg) {
     printf("apple producer%d: free\n", id);
     pcState[id][0] = 0;
     V(&lock);
-    sleep(rand() % 2 + 1);
+    sleep(freeTime[id][0]);
 
     P(&lock);
     printf("apple producer%d: wait memory\n", id);
@@ -41,6 +41,9 @@ void *appleProducer(void *arg) {
     printf("apple producer%d: start to produce\n", id);
     pcState[id][0] = 2;
     memState[id] = 1;
+    mem_host[id].type = 0;
+    mem_host[id].id = id;
+    pc_target[id][0] = id;
     V(&lock);
     sleep(workTime[id][0]);
 
@@ -59,7 +62,7 @@ void *orangeProducer(void *arg) {
     printf("orange producer%d: free\n", id);
     pcState[id][1] = 0;
     V(&lock);
-    sleep(rand() % 2 + 1);
+    sleep(freeTime[id][1]);
 
     P(&lock);
     printf("orange producer%d: wait memory\n", id);
@@ -89,7 +92,7 @@ void *appleConsumer(void *arg) {
     printf("apple consumer%d: free\n", id);
     pcState[id][2] = 0;
     V(&lock);
-    sleep(rand() % 2 + 1);
+    sleep(freeTime[id][2]);
 
     P(&lock);
     printf("apple comsumer%d: wait apple\n", id);
@@ -118,7 +121,7 @@ void *orangeConsumer(void *arg) {
     printf("orange consumer%d: free\n", id);
     pcState[id][3] = 0;
     V(&lock);
-    sleep(rand() % 2 + 1);
+    sleep(freeTime[id][3]);
 
     P(&lock);
     printf("orange comsumer%d: wait orange\n", id);
@@ -148,6 +151,11 @@ void proc_start() {
     workTime[i][1] = rand() % 6 + 1;
     workTime[i][2] = rand() % 2 + 1;
     workTime[i][3] = rand() % 2 + 1;
+
+    freeTime[i][0] = rand() % 2 + 1;
+    freeTime[i][1] = rand() % 2 + 1;
+    freeTime[i][2] = rand() % 2 + 1;
+    freeTime[i][3] = rand() % 2 + 1;
   }
 
   // 初始化信号量

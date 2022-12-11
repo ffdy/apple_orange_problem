@@ -17,4 +17,14 @@ extern int pcState[N][4];
 // 生产者消费者工作颜色对应
 extern int workTime[N][4];
 extern int freeTime[N][4];
+
+#ifndef MEM_HOST__
+#define MEM_HOST__
+struct mem_host_s {
+  int type, id;
+} mem_host[N];
+#endif
+
+extern int pc_target[N][4];
+
 extern float workColor[3][3];

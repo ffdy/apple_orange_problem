@@ -23,6 +23,8 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "lib/stb_truetype.h"
 
+#define FPS 30
+
 float WW = 1600, WH = 900;
 
 float bdx = 0, bdy = 0;
@@ -84,7 +86,7 @@ float memDw = 0.173f, memDh = 0.397f;
 
 struct selected {
   int id, type;
-  int *work_time, *free_time;
+  // int *work_time, *free_time;
 } Selected;
 
 void view_data() {
@@ -238,9 +240,8 @@ void genTextureFromTTF(GLuint textureIndex, GLuint textureID,
 // |
 // |y
 void drawFont(GLFWwindow *window, float x, float y, char *msg, float font_height) {
-  GLuint tex1, tex2;
-  glad_glGenTextures(1, &tex1);
-  glad_glGenTextures(1, &tex2);
+  GLuint tex1;
+  glGenTextures(1, &tex1);
 
   x *= WW;
   y *= WH;
@@ -293,8 +294,9 @@ void drawFont(GLFWwindow *window, float x, float y, char *msg, float font_height
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
   }
 
+  glDeleteTextures(1, &tex1);
 
-    // glUniform2f(glGetUniformLocation(fontShaderProgram, "vertex"), )
+  // glUniform2f(glGetUniformLocation(fontShaderProgram, "vertex"), )
 
   // glUseProgram(shaderProgram[1]);
   // glUniform1i(glGetUniformLocation(shaderProgram[1], "textureImg"), 2);
@@ -372,7 +374,7 @@ void processInput(GLFWwindow *window) {
   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
     bdx -= 0.001;
   }
-  // printf("%f %f\n", bdx, bdy);
+  printf("%f %f\n", bdx, bdy);
 }
 
 // 鼠标回调函数
@@ -392,8 +394,8 @@ void mouse_click_callback(GLFWwindow *window, int button, int action,
           // printf("Box: (%d, %d)\n", i, j);
           Selected.type = j;
           Selected.id = i;
-          Selected.work_time = &workTime[i][j];
-          Selected.free_time = &freeTime[i][j];
+          // Selected.work_time = &workTime[i][j];
+          // Selected.free_time = &freeTime[i][j];
           goto click_mem;
         }
       }
@@ -619,8 +621,11 @@ void *view(void *arg) {
   float s0 = 0.093f, s1 = 0.114f;
   float z0 = 0.082f;
 
-  // bdx = s0;
-  // bdy = z0;
+  float ts0 = 1.756f, ts1 = 0.810f, ts2 = 0.572, ts3;
+  float tz0 = 0.013f, tz1 = 0.047f;
+
+  // bdx = 1.8;
+  // bdy = 1.2;
   // dotInTriangle(0.5, 0.5, 0, 0, 1, 0, 0, 1);
 
   while (!glfwWindowShouldClose(window)) {
@@ -633,19 +638,29 @@ void *view(void *arg) {
     processInput(window);
     drawOnce(window);
 
-    // drawFont(window, s0, s1, "Apple", 40);
-    // drawFont(window, z0, s1 + ds0, "Producer", 40);
-    // drawFont(window, s0, s1 + ds1, "Orange", 40);
-    // drawFont(window, z0, s1 + ds1 + ds0, "Producer", 40);
-    // drawFont(window, s0, s1 + 2 * ds1, "Apple", 40);
-    // drawFont(window, z0, s1 + 2 * ds1 + ds0, "Comsumer", 40);
-    // drawFont(window, s0, s1 + 3 * ds1, "Orange", 40);
-    // drawFont(window, z0, s1 + 3 * ds1 + ds0, "Consumer", 40);
-    // drawFont(window, 0.090, 1.450, "Memories", 40);
+    drawFont(window, s0, s1, "Apple", 40);
+    drawFont(window, z0, s1 + ds0, "Producer", 40);
+    drawFont(window, s0, s1 + ds1, "Orange", 40);
+    drawFont(window, z0, s1 + ds1 + ds0, "Producer", 40);
+    drawFont(window, s0, s1 + 2 * ds1, "Apple", 40);
+    drawFont(window, z0, s1 + 2 * ds1 + ds0, "Comsumer", 40);
+    drawFont(window, s0, s1 + 3 * ds1, "Orange", 40);
+    drawFont(window, z0, s1 + 3 * ds1 + ds0, "Consumer", 40);
+    drawFont(window, 0.090, 1.450, "Memories", 40);
+
+    if (Selected.type != 4) {
+      drawFont(window, ts0, ts1, "Work", 40);
+      drawFont(window, ts0, ts2, "Free", 40);
+      char num_str[10];
+      sprintf(num_str, "%d", workTime[Selected.id][Selected.type]);
+      drawFont(window, ts0 + tz0, ts1 + tz1, num_str, 60);
+      sprintf(num_str, "%d", freeTime[Selected.id][Selected.type]);
+      drawFont(window, ts0 + tz0, ts2 + tz1, "4", 60);
+    }
 
     glfwSwapBuffers(window);
     glfwPollEvents();
-    usleep(33000);
+    usleep(1e6 / FPS);
   }
 
   glDeleteBuffers(2, VAO);
