@@ -17,7 +17,7 @@ int pcState[N][4] = {0};
 int workTime[N][4] = {0};
 int freeTime[N][4] = {0};
 
-// int mem_host[N];
+int mem_host[N];
 int pc_target[N][4];
 
 float workColor[3][3] = {

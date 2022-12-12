@@ -2,8 +2,8 @@
 #define N 20
 
 // 状态矩阵，用于渲染图形
-// 内存状态，0空闲，1apple生产占用，2apple等待消费
-// 3orange生产占用，4orange等待消费
+// 内存状态，0空闲，1apple生产占用，2apple等待消费, 5apple消费占用
+// 3orange生产占用，4orange等待消费，6orange消费占用
 extern int memState[N];
 // // [x][0]apple生产者，[x][1]orange生产者
 // int pStatMatrix[N][2] = {0};
@@ -18,12 +18,7 @@ extern int pcState[N][4];
 extern int workTime[N][4];
 extern int freeTime[N][4];
 
-#ifndef MEM_HOST__
-#define MEM_HOST__
-struct mem_host_s {
-  int type, id;
-} mem_host[N];
-#endif
+extern int mem_host[N];
 
 extern int pc_target[N][4];
 

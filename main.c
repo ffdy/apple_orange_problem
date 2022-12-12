@@ -6,10 +6,10 @@ int main() {
 
   view_start();
   // 段溢出？？局部变量销毁
-  // proc_start();
+  proc_start();
 
   view_done();
-  // proc_done();
+  proc_done();
 
   return 0;
 }

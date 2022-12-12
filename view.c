@@ -78,7 +78,7 @@ unsigned int indices[] = {
 };
 
 float pcOffset[N][4][2];
-float memOffset[N][2];
+float memOffset[N + 1][2];
 
 float pcDw = 0.125f, pcDh = 0.118f;
 // float memDw = 0.25f, memDh = 0.221f;
@@ -91,7 +91,7 @@ struct selected {
 
 void view_data() {
   for (int i = 0; i < 4; i++) {
-    for (int j = 0; j < 20; j += 2) {
+    for (int j = 0; j < N; j += 2) {
       pcOffset[j][i][0] = (int)(j / 2) * pcDw;
       pcOffset[j + 1][i][0] = (int)(j / 2) * pcDw;
       pcOffset[j][i][1] = 0 - 2 * i * pcDh;
@@ -99,7 +99,7 @@ void view_data() {
     }
 
   }
-  for (int i = 0; i < 20; i += 2) {
+  for (int i = 0; i < N; i += 2) {
     // for (int k = 0; k < 4; k++) {
     //   memOffset[j + k][0] = (int)(j / 4) * memDw;
     //   memOffset[j + k][1] = 0 - k * memDh;
@@ -109,6 +109,9 @@ void view_data() {
     memOffset[i + 1][0] = (int)(i / 2) * memDw;
     memOffset[i + 1][1] = -memDh;
   }
+
+  memOffset[N][0] = 1.428f;
+  memOffset[N][1] = 0.534f;
 }
 
 GLuint VAO[2], VBO[2], EBO[2];
@@ -327,25 +330,35 @@ void drawOnce(GLFWwindow *window) {
     }
   }
 
-  glBindVertexArray(bVAO);
-  glUniform2f(glGetUniformLocation(shaderProgram[0], "offset"), 0, 0);
-  glUniform3f(glGetUniformLocation(shaderProgram[0], "textureColor"), 0, 0, 0);
-  glDrawArrays(GL_TRIANGLES, 0, 12);
+  int mem_draw_times = N;
 
-  for (int i = 0; i < N; i++) {
-    if (memState[i] == 0) {
+  if (Selected.type != 4) {
+    glBindVertexArray(bVAO);
+    glUniform2f(glGetUniformLocation(shaderProgram[0], "offset"), 0, 0);
+    glUniform3f(glGetUniformLocation(shaderProgram[0], "textureColor"), 0, 0, 0);
+    glDrawArrays(GL_TRIANGLES, 0, 12);
+  } else {
+    mem_draw_times = N + 1;
+  }
+
+  for (int i = 0; i < mem_draw_times; i++) {
+    int mem_id = i;
+    if (i == N) {
+      mem_id = Selected.id;
+    }
+    if (memState[mem_id] == 0) {
       glUseProgram(shaderProgram[0]);
       glUniform3f(glGetUniformLocation(shaderProgram[0], "textureColor"), workColor[0][0], workColor[0][1], workColor[0][2]);
-    } else if (memState[i] == 1) {
+    } else if (memState[mem_id] == 1) {
       glUseProgram(shaderProgram[1]);
       glUniform1i(glGetUniformLocation(shaderProgram[1], "textureImg"), 0);
-    } else if (memState[i] == 2) {
+    } else if (memState[mem_id] == 2 || memState[mem_id] == 5) {
       glUseProgram(shaderProgram[2]);
       glUniform1i(glGetUniformLocation(shaderProgram[2], "textureImg"), 0);
-    } else if (memState[i] == 3) {
+    } else if (memState[mem_id] == 3) {
       glUseProgram(shaderProgram[1]);
       glUniform1i(glGetUniformLocation(shaderProgram[1], "textureImg"), 1);
-    } else if (memState[i] == 4) {
+    } else if (memState[mem_id] == 4 || memState[mem_id] == 6) {
       glUseProgram(shaderProgram[2]);
       glUniform1i(glGetUniformLocation(shaderProgram[2], "textureImg"), 1);
     }
@@ -374,7 +387,10 @@ void processInput(GLFWwindow *window) {
   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
     bdx -= 0.001;
   }
-  printf("%f %f\n", bdx, bdy);
+  // printf("%f %f\n", bdx, bdy);
+
+  // memOffset[N][0] = 1.5 + bdx;
+  // memOffset[N][1] = 0.4 + bdy;
 }
 
 // 鼠标回调函数
@@ -621,11 +637,15 @@ void *view(void *arg) {
   float s0 = 0.093f, s1 = 0.114f;
   float z0 = 0.082f;
 
-  float ts0 = 1.756f, ts1 = 0.810f, ts2 = 0.572, ts3;
-  float tz0 = 0.013f, tz1 = 0.047f;
+  float ts0 = 1.756f, ts1 = 0.810f, ts2 = 0.572f;
+  float tz0 = 0.013f, tz1 = 0.047f, tz2 = -0.023f, tz3 = -0.784f;
+  float tz4 = -0.168f, tz5 = -0.555f;
 
-  // bdx = 1.8;
-  // bdy = 1.2;
+  // bdx = - 0.211f;
+  // bdy = -0.533f;
+  bdx = tz4;
+  // 文本打印缓冲
+  char cbuf[100];
   // dotInTriangle(0.5, 0.5, 0, 0, 1, 0, 0, 1);
 
   while (!glfwWindowShouldClose(window)) {
@@ -634,6 +654,7 @@ void *view(void *arg) {
 
     // s0 = bdx;
     // z0 = bdy;
+    tz4 = bdx;
     
     processInput(window);
     drawOnce(window);
@@ -648,14 +669,74 @@ void *view(void *arg) {
     drawFont(window, z0, s1 + 3 * ds1 + ds0, "Consumer", 40);
     drawFont(window, 0.090, 1.450, "Memories", 40);
 
+    drawFont(window, ts0 + tz2, ts1 + tz3, "Info", 70);
+
+    // 选择的对象
+    drawFont(window, ts0 + tz4, ts1 + tz5 - 0.08f, " Select : ", 40);
+    if (Selected.type == 0) {
+      sprintf(cbuf, "Apple Producer %d", Selected.id + 1);
+    } else if (Selected.type == 1) {
+      sprintf(cbuf, "Orange Producer %d", Selected.id + 1);
+    } else if (Selected.type == 2) {
+      sprintf(cbuf, "Apple Consumer %d", Selected.id + 1);
+    } else if (Selected.type == 3) {
+      sprintf(cbuf, "Orange Consumer %d", Selected.id + 1);
+    } else {
+      sprintf(cbuf, "Memory %d", Selected.id + 1);
+    }
+    drawFont(window, ts0 + tz4 + 0.12f, ts1 + tz5 - 0.08f, cbuf, 40);
+
+    // 状态
+    drawFont(window, ts0 + tz4, ts1 + tz5, " Status : ", 40);
+    if (Selected.type == 4) {
+      if (memState[Selected.id] == 0) {
+        sprintf(cbuf, "Free");
+      } else if (memState[Selected.id] == 1) {
+        sprintf(cbuf, "Producer %d", mem_host[Selected.id]);
+        drawFont(window, ts0 + tz4 + 0.12f, ts1 + tz5 + 0.08f, cbuf, 40);
+        sprintf(cbuf, "Occupied by Apple");
+      } else if (memState[Selected.id] == 2) {
+        sprintf(cbuf, "Occupied by Apple");
+      } else if (memState[Selected.id] == 3) {
+        sprintf(cbuf, "Producer %d", mem_host[Selected.id]);
+        drawFont(window, ts0 + tz4 + 0.12f, ts1 + tz5 + 0.08f, cbuf, 40);
+        sprintf(cbuf, "Occupied by Orange");
+      } else if (memState[Selected.id] == 4) {
+        sprintf(cbuf, "Occupied by Orange");
+      } else if (memState[Selected.id] == 5) {
+        sprintf(cbuf, "Consumer %d", mem_host[Selected.id]);
+        drawFont(window, ts0 + tz4 + 0.12f, ts1 + tz5 + 0.08f, cbuf, 40);
+        sprintf(cbuf, "Occupied by Apple");
+      } else {
+        sprintf(cbuf, "Consumer %d", mem_host[Selected.id]);
+        drawFont(window, ts0 + tz4 + 0.12f, ts1 + tz5 + 0.08f, cbuf, 40);
+        sprintf(cbuf, "Occupied by Orange");
+      }
+    } else {
+      if (pcState[Selected.id][Selected.type] == 0) {
+        sprintf(cbuf, "Free");
+      } else if (pcState[Selected.id][Selected.type] == 1) {
+        sprintf(cbuf, "Waiting for Memory");
+      } else if (pcState[Selected.id][Selected.type] == 2) {
+        if (Selected.type == 0 || Selected.type == 1) {
+          sprintf(cbuf, "Producing at Memory %d", pc_target[Selected.id][Selected.type]);
+        } else {
+          sprintf(cbuf, "Consuming at Memory %d", pc_target[Selected.id][Selected.type]);
+        }
+      }
+    }
+    drawFont(window, ts0 + tz4 + 0.12f, ts1 + tz5, cbuf, 40);
+
+    printf("%f, %f\n", bdx, bdy);
+    
     if (Selected.type != 4) {
       drawFont(window, ts0, ts1, "Work", 40);
       drawFont(window, ts0, ts2, "Free", 40);
-      char num_str[10];
-      sprintf(num_str, "%d", workTime[Selected.id][Selected.type]);
-      drawFont(window, ts0 + tz0, ts1 + tz1, num_str, 60);
-      sprintf(num_str, "%d", freeTime[Selected.id][Selected.type]);
-      drawFont(window, ts0 + tz0, ts2 + tz1, "4", 60);
+      
+      sprintf(cbuf, "%d", workTime[Selected.id][Selected.type]);
+      drawFont(window, ts0 + tz0, ts1 + tz1, cbuf, 60);
+      sprintf(cbuf, "%d", freeTime[Selected.id][Selected.type]);
+      drawFont(window, ts0 + tz0, ts2 + tz1, cbuf, 60);
     }
 
     glfwSwapBuffers(window);

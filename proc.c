@@ -41,8 +41,7 @@ void *appleProducer(void *arg) {
     printf("apple producer%d: start to produce\n", id);
     pcState[id][0] = 2;
     memState[id] = 1;
-    mem_host[id].type = 0;
-    mem_host[id].id = id;
+    mem_host[id] = id;
     pc_target[id][0] = id;
     V(&lock);
     sleep(workTime[id][0]);
@@ -74,6 +73,8 @@ void *orangeProducer(void *arg) {
     printf("orange producer%d: start to produce\n", id);
     pcState[id][1] = 2;
     memState[id] = 3;
+    mem_host[id] = id;
+    pc_target[id][1] = id;
     V(&lock);
     sleep(workTime[id][1]);
 
@@ -103,6 +104,8 @@ void *appleConsumer(void *arg) {
     P(&lock);
     printf("apple consumer%d: start to consume\n", id);
     pcState[id][2] = 2;
+    mem_host[id] = id;
+    pc_target[id][2] = id;
     V(&lock);
     sleep(workTime[id][2]);
 
@@ -132,6 +135,8 @@ void *orangeConsumer(void *arg) {
     P(&lock);
     printf("orange consumer%d: start to consume\n", id);
     pcState[id][3] = 2;
+    mem_host[id] = id;
+    pc_target[id][3] = id;
     V(&lock);
     sleep(workTime[id][3]);
 
