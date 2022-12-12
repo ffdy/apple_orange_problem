@@ -14,29 +14,22 @@
 // 图形变化
 #define MATH_3D_IMPLEMENTATION
 #include "lib/math_3d.h"
+
 // 纹理导入
 #define STB_IMAGE_IMPLEMENTATION
 #include "lib/stb_image.h"
-// #define STB_IMAGE_WRITE_IMPLEMENTATION
-// #include "lib/stb_image_write.h"
-// 文本渲染
+
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "lib/stb_truetype.h"
 
 #define FPS 30
-
-float WW = 1600, WH = 900;
-
-float bdx = 0, bdy = 0;
+#define WW 1600
+#define WH 900
 
 pthread_t view_thread;
 
 float pcVertices[] = {
     //-坐标----  纹理坐标----
-    // 0.0f, 0.3f, 0.0f, 1.0f,
-    // 0.0f, 0.0f, 0.0f, 0.0f,
-    // 0.3f, 0.0f, 1.0f, 0.0f,
-    // 0.3f, 0.3f, 1.0f, 1.0f
     -0.741f, 0.926, 0.0f, 1.0f,
     -0.741f, 0.838, 0.0f, 0.0f, 
     -0.634f, 0.838, 1.0f, 0.0f,
@@ -44,10 +37,6 @@ float pcVertices[] = {
 };
 
 float memVertices[] = {
-    // -0.732f, -0.059f, 0.0f, 1.0f,
-    // -0.732f, -0.25f, 0.0f, 0.0f,
-    // -0.518f, -0.25f, 1.0f, 0.0f,
-    // -0.518f, -0.059f, 1.0f, 1.0f
     -0.727f, -0.147f, 0.0f, 1.0f,
     -0.727f, -0.368f, 0.0f, 0.0f,
     -0.591f, -0.368f, 1.0f, 0.0f,
@@ -81,13 +70,11 @@ float pcOffset[N][4][2];
 float memOffset[N + 1][2];
 
 float pcDw = 0.125f, pcDh = 0.118f;
-// float memDw = 0.25f, memDh = 0.221f;
 float memDw = 0.173f, memDh = 0.397f;
 
-struct selected {
+struct Info {
   int id, type;
-  // int *work_time, *free_time;
-} Selected;
+} info_select;
 
 void view_data() {
   for (int i = 0; i < 4; i++) {
@@ -100,10 +87,6 @@ void view_data() {
 
   }
   for (int i = 0; i < N; i += 2) {
-    // for (int k = 0; k < 4; k++) {
-    //   memOffset[j + k][0] = (int)(j / 4) * memDw;
-    //   memOffset[j + k][1] = 0 - k * memDh;
-    // }
     memOffset[i][0] = (int)(i / 2) * memDw;
     memOffset[i][1] = 0;
     memOffset[i + 1][0] = (int)(i / 2) * memDw;
@@ -126,17 +109,12 @@ int dotInTriangle(float x, float y, float x1, float y1,
   float s2 = fabsf((x1 - x) * (y3 - y) - (x3 - x) * (y1 - y)) / 2;
   float s3 = fabsf((x3 - x) * (y2 - y) - (x2 - x) * (y3 - y)) / 2;
 
-  // printf("(%f, %f), (%f, %f), (%f, %f), (%f, %f) ", x, y, x1, y2, x2, y2, x3, y3);
-  // printf("s: %f, s1: %f, s2: %f, s3: %f\n", s, s1, s2, s3);
-
-  if (fabsf(s1 + s2 + s3 - s) < 0.01) {
+  if (fabsf(s1 + s2 + s3 - s) < 0.01)
     return 1;
-  }
   return 0;
 }
 
 int dotInBox(float x, float y, float x1, float y1, float x2, float y2) {
-  printf("(%f, %f), (%f, %f), (%f, %f)\n", x, y, x1, y1, x2, y2);
   if (x <= x2 && x >= x1 && y >= y2 && y <= y1)
     return 1;
   return 0;
@@ -332,7 +310,7 @@ void drawOnce(GLFWwindow *window) {
 
   int mem_draw_times = N;
 
-  if (Selected.type != 4) {
+  if (info_select.type != 4) {
     glBindVertexArray(bVAO);
     glUniform2f(glGetUniformLocation(shaderProgram[0], "offset"), 0, 0);
     glUniform3f(glGetUniformLocation(shaderProgram[0], "textureColor"), 0, 0, 0);
@@ -344,7 +322,7 @@ void drawOnce(GLFWwindow *window) {
   for (int i = 0; i < mem_draw_times; i++) {
     int mem_id = i;
     if (i == N) {
-      mem_id = Selected.id;
+      mem_id = info_select.id;
     }
     if (memState[mem_id] == 0) {
       glUseProgram(shaderProgram[0]);
@@ -375,22 +353,6 @@ void drawOnce(GLFWwindow *window) {
 void processInput(GLFWwindow *window) {
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, 1);
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-    bdy -= 0.001;
-  }
-  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-    bdy += 0.001;
-  }
-  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-    bdx += 0.001;
-  }
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-    bdx -= 0.001;
-  }
-  // printf("%f %f\n", bdx, bdy);
-
-  // memOffset[N][0] = 1.5 + bdx;
-  // memOffset[N][1] = 0.4 + bdy;
 }
 
 // 鼠标回调函数
@@ -408,10 +370,10 @@ void mouse_click_callback(GLFWwindow *window, int button, int action,
                      1 - cy * 2 / WH - pcOffset[i][j][1], pcVertices[0],
                      pcVertices[1], pcVertices[8], pcVertices[9])) {
           // printf("Box: (%d, %d)\n", i, j);
-          Selected.type = j;
-          Selected.id = i;
-          // Selected.work_time = &workTime[i][j];
-          // Selected.free_time = &freeTime[i][j];
+          info_select.type = j;
+          info_select.id = i;
+          // info_select.work_time = &workTime[i][j];
+          // info_select.free_time = &freeTime[i][j];
           goto click_mem;
         }
       }
@@ -424,13 +386,13 @@ void mouse_click_callback(GLFWwindow *window, int button, int action,
                    1 - cy * 2 / WH - memOffset[i][1], memVertices[0],
                    memVertices[1], memVertices[8], memVertices[9])) {
         // printf("memBox: %d\n", i);
-        Selected.type = 4;
-        Selected.id = i;
+        info_select.type = 4;
+        info_select.id = i;
         break;
       }
     }
 
-    if (Selected.type == 4)
+    if (info_select.type == 4)
       return;
     // button
     for (int i = 0; i < 4; i++) {
@@ -440,17 +402,17 @@ void mouse_click_callback(GLFWwindow *window, int button, int action,
                        buttonVertices[i * 12 + 9])) {
         printf("in tra %d\n", i);
         if (i == 0) {
-          if (freeTime[Selected.id][Selected.type] == 0)
+          if (freeTime[info_select.id][info_select.type] == 0)
             return;
-          freeTime[Selected.id][Selected.type]--;
+          freeTime[info_select.id][info_select.type]--;
         } else if (i == 1) {
-          freeTime[Selected.id][Selected.type]++;
+          freeTime[info_select.id][info_select.type]++;
         } else if (i == 2) {
-          if (workTime[Selected.id][Selected.type] == 0)
+          if (workTime[info_select.id][info_select.type] == 0)
             return;
-          workTime[Selected.id][Selected.type]--;
+          workTime[info_select.id][info_select.type]--;
         } else {
-          workTime[Selected.id][Selected.type]++;
+          workTime[info_select.id][info_select.type]++;
         }
         break;
       }
@@ -652,20 +614,12 @@ void *view(void *arg) {
   float tz0 = 0.013f, tz1 = 0.047f, tz2 = -0.023f, tz3 = -0.784f;
   float tz4 = -0.168f, tz5 = -0.555f;
 
-  // bdx = - 0.211f;
-  // bdy = -0.533f;
-  bdx = tz0;
   // 文本打印缓冲
   char cbuf[100];
-  // dotInTriangle(0.5, 0.5, 0, 0, 1, 0, 0, 1);
 
   while (!glfwWindowShouldClose(window)) {
     glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-
-    // s0 = bdx;
-    // z0 = bdy;
-    tz0 = bdx;
     
     processInput(window);
     drawOnce(window);
@@ -684,69 +638,67 @@ void *view(void *arg) {
 
     // 选择的对象
     drawFont(window, ts0 + tz4, ts1 + tz5 - 0.08f, " Select : ", 40);
-    if (Selected.type == 0) {
-      sprintf(cbuf, "Apple Producer %d", Selected.id + 1);
-    } else if (Selected.type == 1) {
-      sprintf(cbuf, "Orange Producer %d", Selected.id + 1);
-    } else if (Selected.type == 2) {
-      sprintf(cbuf, "Apple Consumer %d", Selected.id + 1);
-    } else if (Selected.type == 3) {
-      sprintf(cbuf, "Orange Consumer %d", Selected.id + 1);
+    if (info_select.type == 0) {
+      sprintf(cbuf, "Apple Producer %d", info_select.id + 1);
+    } else if (info_select.type == 1) {
+      sprintf(cbuf, "Orange Producer %d", info_select.id + 1);
+    } else if (info_select.type == 2) {
+      sprintf(cbuf, "Apple Consumer %d", info_select.id + 1);
+    } else if (info_select.type == 3) {
+      sprintf(cbuf, "Orange Consumer %d", info_select.id + 1);
     } else {
-      sprintf(cbuf, "Memory %d", Selected.id + 1);
+      sprintf(cbuf, "Memory %d", info_select.id + 1);
     }
     drawFont(window, ts0 + tz4 + 0.12f, ts1 + tz5 - 0.08f, cbuf, 40);
 
     // 状态
     drawFont(window, ts0 + tz4, ts1 + tz5, " Status : ", 40);
-    if (Selected.type == 4) {
-      if (memState[Selected.id] == 0) {
+    if (info_select.type == 4) {
+      if (memState[info_select.id] == 0) {
         sprintf(cbuf, "Free");
-      } else if (memState[Selected.id] == 1) {
-        sprintf(cbuf, "Producer %d", mem_host[Selected.id]);
+      } else if (memState[info_select.id] == 1) {
+        sprintf(cbuf, "Producer %d", mem_host[info_select.id]);
         drawFont(window, ts0 + tz4 + 0.12f, ts1 + tz5 + 0.08f, cbuf, 40);
         sprintf(cbuf, "Occupied by Apple");
-      } else if (memState[Selected.id] == 2) {
+      } else if (memState[info_select.id] == 2) {
         sprintf(cbuf, "Occupied by Apple");
-      } else if (memState[Selected.id] == 3) {
-        sprintf(cbuf, "Producer %d", mem_host[Selected.id]);
+      } else if (memState[info_select.id] == 3) {
+        sprintf(cbuf, "Producer %d", mem_host[info_select.id]);
         drawFont(window, ts0 + tz4 + 0.12f, ts1 + tz5 + 0.08f, cbuf, 40);
         sprintf(cbuf, "Occupied by Orange");
-      } else if (memState[Selected.id] == 4) {
+      } else if (memState[info_select.id] == 4) {
         sprintf(cbuf, "Occupied by Orange");
-      } else if (memState[Selected.id] == 5) {
-        sprintf(cbuf, "Consumer %d", mem_host[Selected.id]);
+      } else if (memState[info_select.id] == 5) {
+        sprintf(cbuf, "Consumer %d", mem_host[info_select.id]);
         drawFont(window, ts0 + tz4 + 0.12f, ts1 + tz5 + 0.08f, cbuf, 40);
         sprintf(cbuf, "Occupied by Apple");
       } else {
-        sprintf(cbuf, "Consumer %d", mem_host[Selected.id]);
+        sprintf(cbuf, "Consumer %d", mem_host[info_select.id]);
         drawFont(window, ts0 + tz4 + 0.12f, ts1 + tz5 + 0.08f, cbuf, 40);
         sprintf(cbuf, "Occupied by Orange");
       }
     } else {
-      if (pcState[Selected.id][Selected.type] == 0) {
+      if (pcState[info_select.id][info_select.type] == 0) {
         sprintf(cbuf, "Free");
-      } else if (pcState[Selected.id][Selected.type] == 1) {
+      } else if (pcState[info_select.id][info_select.type] == 1) {
         sprintf(cbuf, "Waiting for Memory");
-      } else if (pcState[Selected.id][Selected.type] == 2) {
-        if (Selected.type == 0 || Selected.type == 1) {
-          sprintf(cbuf, "Producing at Memory %d", pc_target[Selected.id][Selected.type]);
+      } else if (pcState[info_select.id][info_select.type] == 2) {
+        if (info_select.type == 0 || info_select.type == 1) {
+          sprintf(cbuf, "Producing at Memory %d", pc_target[info_select.id][info_select.type]);
         } else {
-          sprintf(cbuf, "Consuming at Memory %d", pc_target[Selected.id][Selected.type]);
+          sprintf(cbuf, "Consuming at Memory %d", pc_target[info_select.id][info_select.type]);
         }
       }
     }
     drawFont(window, ts0 + tz4 + 0.12f, ts1 + tz5, cbuf, 40);
-
-    printf("%f, %f\n", bdx, bdy);
     
-    if (Selected.type != 4) {
+    if (info_select.type != 4) {
       drawFont(window, ts0, ts1, "Work", 40);
       drawFont(window, ts0, ts2, "Free", 40);
       
-      sprintf(cbuf, "%ds", workTime[Selected.id][Selected.type]);
+      sprintf(cbuf, "%ds", workTime[info_select.id][info_select.type]);
       drawFont(window, ts0, ts1 + tz1, cbuf, 60);
-      sprintf(cbuf, "%ds", freeTime[Selected.id][Selected.type]);
+      sprintf(cbuf, "%ds", freeTime[info_select.id][info_select.type]);
       drawFont(window, ts0, ts2 + tz1, cbuf, 60);
     }
 
