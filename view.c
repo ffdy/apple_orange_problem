@@ -440,6 +440,17 @@ void mouse_click_callback(GLFWwindow *window, int button, int action,
                        buttonVertices[i * 12 + 9])) {
         printf("in tra %d\n", i);
         if (i == 0) {
+          if (freeTime[Selected.id][Selected.type] == 0)
+            return;
+          freeTime[Selected.id][Selected.type]--;
+        } else if (i == 1) {
+          freeTime[Selected.id][Selected.type]++;
+        } else if (i == 2) {
+          if (workTime[Selected.id][Selected.type] == 0)
+            return;
+          workTime[Selected.id][Selected.type]--;
+        } else {
+          workTime[Selected.id][Selected.type]++;
         }
         break;
       }
@@ -643,7 +654,7 @@ void *view(void *arg) {
 
   // bdx = - 0.211f;
   // bdy = -0.533f;
-  bdx = tz4;
+  bdx = tz0;
   // 文本打印缓冲
   char cbuf[100];
   // dotInTriangle(0.5, 0.5, 0, 0, 1, 0, 0, 1);
@@ -654,7 +665,7 @@ void *view(void *arg) {
 
     // s0 = bdx;
     // z0 = bdy;
-    tz4 = bdx;
+    tz0 = bdx;
     
     processInput(window);
     drawOnce(window);
@@ -733,10 +744,10 @@ void *view(void *arg) {
       drawFont(window, ts0, ts1, "Work", 40);
       drawFont(window, ts0, ts2, "Free", 40);
       
-      sprintf(cbuf, "%d", workTime[Selected.id][Selected.type]);
-      drawFont(window, ts0 + tz0, ts1 + tz1, cbuf, 60);
-      sprintf(cbuf, "%d", freeTime[Selected.id][Selected.type]);
-      drawFont(window, ts0 + tz0, ts2 + tz1, cbuf, 60);
+      sprintf(cbuf, "%ds", workTime[Selected.id][Selected.type]);
+      drawFont(window, ts0, ts1 + tz1, cbuf, 60);
+      sprintf(cbuf, "%ds", freeTime[Selected.id][Selected.type]);
+      drawFont(window, ts0, ts2 + tz1, cbuf, 60);
     }
 
     glfwSwapBuffers(window);
