@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 // 信号量
-#include "lib/sem.h"
+#include "sem.h"
 #include "data.h"
 #include "proc.h"
 

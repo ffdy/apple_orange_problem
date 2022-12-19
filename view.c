@@ -11,10 +11,6 @@
 #include "data.h"
 #include "view.h"
 
-// 图形变化
-#define MATH_3D_IMPLEMENTATION
-#include "lib/math_3d.h"
-
 // 纹理导入
 #define STB_IMAGE_IMPLEMENTATION
 #include "lib/stb_image.h"
@@ -168,34 +164,13 @@ void gen_texture_from_file(GLuint texture_id, GLuint texture_place, const char *
   stbi_image_free(img_data);
 }
 
-void gen_texture_from_color(GLuint texture_id, GLuint texture_place,
-                         vec3_t color) {
-  glActiveTexture(texture_id);
-  glBindTexture(GL_TEXTURE_2D, texture_place);
-   // 设定对象环绕、过滤方式
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  // 加载图片
-  unsigned char color_data[3 * 250 * 250 * sizeof(unsigned char)];
-  for (int i = 0; i < 250 * 250; i++) {
-    color_data[i * 3] = (unsigned char)(color.x * 255.0f);
-    color_data[i * 3 + 1] = (unsigned char)(color.y * 255.0f);
-    color_data[i * 3 + 2] = (unsigned char)(color.z * 255.0f);
-  }
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 250, 250, 0, GL_RGB,
-             GL_UNSIGNED_BYTE, color_data);
-  glGenerateMipmap(GL_TEXTURE_2D); // 自动生成多级渐远纹理
-}
-
 GLubyte ttf_file_buffer[1 << 20];
 GLubyte temp_bitmap[1 << 20];
 GLubyte rgba_data[1 << 22];
 stbtt_bakedchar char_data[96];
 void gen_texture_from_ttf(GLuint texture_id, GLuint texture_place,
-                       const char *ttf_path, GLfloat font_height) {
-  // fread(ttf_file_buffer, 1, 1 << 20, fopen(ttf_path, "rb"));
+                          const char *ttf_path, GLfloat font_height) {
+  
   stbtt_BakeFontBitmap(ttf_file_buffer, 0, font_height, temp_bitmap, 1024, 1024, 32,
                        96, char_data);
   memset(rgba_data, 0, sizeof rgba_data);
@@ -203,17 +178,12 @@ void gen_texture_from_ttf(GLuint texture_id, GLuint texture_place,
   for (int i = 0; i < 1024 * 1024; i++) {
     rgba_data[4 * i + 3] = temp_bitmap[i];
   }
-  // stbi_write_png("../img/STB.png", 1024, 1024, 1, temp_bitmap, 1024);
+  
   glActiveTexture(texture_id);
   glBindTexture(GL_TEXTURE_2D, texture_place);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1024, 1024, 0, GL_RGBA,
                GL_UNSIGNED_BYTE, rgba_data);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  // glGenerateMipmap(GL_TEXTURE_2D);
-  // printf("load over\n");
 }
 // todo
 // +---->x
