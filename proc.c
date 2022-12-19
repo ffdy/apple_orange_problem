@@ -27,28 +27,28 @@ void *appleProducer(void *arg) {
   while (1) {
     P(&lock);
     printf("apple producer%d: free\n", id);
-    pcState[id][0] = 0;
+    producer_consumer_state[id][0] = 0;
     V(&lock);
-    sleep(freeTime[id][0]);
+    sleep(free_time[id][0]);
 
     P(&lock);
     printf("apple producer%d: wait memory\n", id);
-    pcState[id][0] = 1;
+    producer_consumer_state[id][0] = 1;
     V(&lock);
     P(&memLock[id]);
 
     P(&lock);
     printf("apple producer%d: start to produce\n", id);
-    pcState[id][0] = 2;
-    memState[id] = 1;
+    producer_consumer_state[id][0] = 2;
+    mem_state[id] = 1;
     mem_host[id] = id;
-    pc_target[id][0] = id;
+    producer_consumer_target[id][0] = id;
     V(&lock);
-    sleep(workTime[id][0]);
+    sleep(work_time[id][0]);
 
     P(&lock);
     printf("apple producer%d: done\n", id);
-    memState[id] = 2;
+    mem_state[id] = 2;
     V(&lock);
     V(&appleLock[id]);
   }
@@ -59,28 +59,28 @@ void *orangeProducer(void *arg) {
   while (1) {
     P(&lock);
     printf("orange producer%d: free\n", id);
-    pcState[id][1] = 0;
+    producer_consumer_state[id][1] = 0;
     V(&lock);
-    sleep(freeTime[id][1]);
+    sleep(free_time[id][1]);
 
     P(&lock);
     printf("orange producer%d: wait memory\n", id);
-    pcState[id][1] = 1;
+    producer_consumer_state[id][1] = 1;
     V(&lock);
     P(&memLock[id]);
 
     P(&lock);
     printf("orange producer%d: start to produce\n", id);
-    pcState[id][1] = 2;
-    memState[id] = 3;
+    producer_consumer_state[id][1] = 2;
+    mem_state[id] = 3;
     mem_host[id] = id;
-    pc_target[id][1] = id;
+    producer_consumer_target[id][1] = id;
     V(&lock);
-    sleep(workTime[id][1]);
+    sleep(work_time[id][1]);
 
     P(&lock);
     printf("orange producer%d: done\n", id);
-    memState[id] = 4;
+    mem_state[id] = 4;
     V(&lock);
     V(&orangeLock[id]);
   }
@@ -91,27 +91,27 @@ void *appleConsumer(void *arg) {
   while (1) {
     P(&lock);
     printf("apple consumer%d: free\n", id);
-    pcState[id][2] = 0;
+    producer_consumer_state[id][2] = 0;
     V(&lock);
-    sleep(freeTime[id][2]);
+    sleep(free_time[id][2]);
 
     P(&lock);
     printf("apple comsumer%d: wait apple\n", id);
-    pcState[id][2] = 1;
+    producer_consumer_state[id][2] = 1;
     V(&lock);
     P(&appleLock[id]);
 
     P(&lock);
     printf("apple consumer%d: start to consume\n", id);
-    pcState[id][2] = 2;
+    producer_consumer_state[id][2] = 2;
     mem_host[id] = id;
-    pc_target[id][2] = id;
+    producer_consumer_target[id][2] = id;
     V(&lock);
-    sleep(workTime[id][2]);
+    sleep(work_time[id][2]);
 
     P(&lock);
     printf("apple consumer%d: done\n", id);
-    memState[id] = 0;
+    mem_state[id] = 0;
     V(&lock);
     V(&memLock[id]);
   }
@@ -122,27 +122,27 @@ void *orangeConsumer(void *arg) {
   while (1) {
     P(&lock);
     printf("orange consumer%d: free\n", id);
-    pcState[id][3] = 0;
+    producer_consumer_state[id][3] = 0;
     V(&lock);
-    sleep(freeTime[id][3]);
+    sleep(free_time[id][3]);
 
     P(&lock);
     printf("orange comsumer%d: wait orange\n", id);
-    pcState[id][3] = 1;
+    producer_consumer_state[id][3] = 1;
     V(&lock);
     P(&orangeLock[id]);
 
     P(&lock);
     printf("orange consumer%d: start to consume\n", id);
-    pcState[id][3] = 2;
+    producer_consumer_state[id][3] = 2;
     mem_host[id] = id;
-    pc_target[id][3] = id;
+    producer_consumer_target[id][3] = id;
     V(&lock);
-    sleep(workTime[id][3]);
+    sleep(work_time[id][3]);
 
     P(&lock);
     printf("orange consumer%d: done\n", id);
-    memState[id] = 0;
+    mem_state[id] = 0;
     V(&lock);
     V(&memLock[id]);
   }
@@ -152,15 +152,15 @@ void proc_start() {
 
   // 初始化生产者消费者的生产时间
   for (int i = 0; i < N; i++) {
-    workTime[i][0] = rand() % 6 + 1;
-    workTime[i][1] = rand() % 6 + 1;
-    workTime[i][2] = rand() % 2 + 1;
-    workTime[i][3] = rand() % 2 + 1;
+    work_time[i][0] = rand() % 6 + 1;
+    work_time[i][1] = rand() % 6 + 1;
+    work_time[i][2] = rand() % 2 + 1;
+    work_time[i][3] = rand() % 2 + 1;
 
-    freeTime[i][0] = rand() % 2 + 1;
-    freeTime[i][1] = rand() % 2 + 1;
-    freeTime[i][2] = rand() % 2 + 1;
-    freeTime[i][3] = rand() % 2 + 1;
+    free_time[i][0] = rand() % 2 + 1;
+    free_time[i][1] = rand() % 2 + 1;
+    free_time[i][2] = rand() % 2 + 1;
+    free_time[i][3] = rand() % 2 + 1;
   }
 
   // 初始化信号量
