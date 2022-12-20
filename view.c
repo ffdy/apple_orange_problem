@@ -3,8 +3,6 @@
 
 #include <pthread.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 
 #include "data.h" // 共享数据
@@ -409,7 +407,7 @@ void draw_textures() {
 
   int mem_draw_times = N;
 
-  if (info_select.type != 4) {  // 非mem显示调整速度的按钮
+  if (info_select.type != MEMORY) {  // 非mem显示调整速度的按钮
     glBindVertexArray(bVAO);
     glUniform2f(glGetUniformLocation(shader_program[0], "offset"), 0, 0);
     glUniform3f(glGetUniformLocation(shader_program[0], "textureColor"), 0, 0,
@@ -424,21 +422,21 @@ void draw_textures() {
     if (i == N) {
       mem_id = info_select.id;
     }
-    if (mem_state[mem_id] == 0) {
+    if (mem_state[mem_id] == MEM_FREE) {
       glUseProgram(shader_program[0]);
       glUniform3f(glGetUniformLocation(shader_program[0], "textureColor"),
                   texture_color[0][0], texture_color[0][1],
                   texture_color[0][2]);
-    } else if (mem_state[mem_id] == 1) {
+    } else if (mem_state[mem_id] == MEM_APPLE_PRODUCE) {
       glUseProgram(shader_program[1]);
       glUniform1i(glGetUniformLocation(shader_program[1], "textureImg"), 0);
-    } else if (mem_state[mem_id] == 2 || mem_state[mem_id] == 5) {
+    } else if (mem_state[mem_id] == MEM_APPLE_WAITING || mem_state[mem_id] == MEM_APPLE_CONSUME) {
       glUseProgram(shader_program[2]);
       glUniform1i(glGetUniformLocation(shader_program[2], "textureImg"), 0);
-    } else if (mem_state[mem_id] == 3) {
+    } else if (mem_state[mem_id] == MEM_ORANGE_PRODUCE) {
       glUseProgram(shader_program[1]);
       glUniform1i(glGetUniformLocation(shader_program[1], "textureImg"), 1);
-    } else if (mem_state[mem_id] == 4 || mem_state[mem_id] == 6) {
+    } else if (mem_state[mem_id] == MEM_ORANGE_WAITING || mem_state[mem_id] == MEM_ORANGE_CONSUME) {
       glUseProgram(shader_program[2]);
       glUniform1i(glGetUniformLocation(shader_program[2], "textureImg"), 1);
     }
@@ -661,14 +659,14 @@ void *view(void *arg) {
         sprintf(cbuf, "Occupied by Orange");
       }
     } else {
-      if (producer_consumer_state[info_select.id][info_select.type] == 0) {
+      if (producer_consumer_state[info_select.id][info_select.type] == FREE) {
         sprintf(cbuf, "Free");
       } else if (producer_consumer_state[info_select.id][info_select.type] ==
-                 1) {
+                 WAITING) {
         sprintf(cbuf, "Waiting for Memory");
       } else if (producer_consumer_state[info_select.id][info_select.type] ==
-                 2) {
-        if (info_select.type == 0 || info_select.type == 1) {
+                 PRODUCING) {
+        if (info_select.type == APPLE_PRODUCER || info_select.type == ORANGE_PRODUCER) {
           sprintf(cbuf, "Producing at Memory %d",
                   producer_consumer_target[info_select.id][info_select.type] +
                       1);

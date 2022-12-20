@@ -5,11 +5,11 @@
 struct Semaphome {
   int value;
   pthread_mutex_t lock;
-  pthread_cond_t waitQueue;
+  pthread_cond_t wait_queue;
 };
 #endif
 
-void initSem(struct Semaphome *sem, int value);
+void init_sem(struct Semaphome *sem, int value);
 
 void P(struct Semaphome *sem);
 
