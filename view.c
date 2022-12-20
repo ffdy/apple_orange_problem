@@ -106,7 +106,7 @@ void view_data() {
   mem_offset[N][0] = 1.428f;  // Info区域的offset
   mem_offset[N][1] = 0.534f;
 
-  fread(ttf_file_buffer, 1, 1 << 20, fopen("../ttf/CascadiaCode.ttf", "rb"));
+  fread(ttf_file_buffer, 1, 1 << 20, fopen("../font/CascadiaCode.ttf", "rb"));
 }
 
 int dot_in_triangle(float x, float y, float x1, float y1,
