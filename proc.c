@@ -69,11 +69,10 @@ void proc_done() {
 // 记录两类生产消费者所占用的内存的边界
 int apple_mem_border_id = 0, orange_mem_border_id = N - 1;
 
-void find_and_lock_mem(int *mem_id, int expect_state, int result_state, int type) {
+void find_and_lock_mem(int producer_consumer_id, int *mem_id, int expect_state, int result_state, int type) {
   *mem_id = (type ? N : -1);
   while (1) {
     if (type == 0) { // apple
-      // *mem_id = (*mem_id + 1) % (apple_mem_border_id + 1);
       (*mem_id)++;
       if (*mem_id > apple_mem_border_id)
         *mem_id = 0;
@@ -84,14 +83,12 @@ void find_and_lock_mem(int *mem_id, int expect_state, int result_state, int type
         V(&lock);
         continue;
       }
-      if (expect_state == 0) {
+      if (expect_state == MEM_FREE) {
         P(&mem_lock[*mem_id]);
         if ((*mem_id == apple_mem_border_id) && apple_mem_border_id < N - 1 && apple_mem_border_id < orange_mem_border_id)
           apple_mem_border_id++;
-      } else if (expect_state == 2) {
+      } else if (expect_state == MEM_APPLE_WAITING) {
         P(&apple_lock[*mem_id]);
-        // if ((*mem_id == apple_mem_border_id) && apple_mem_border_id)
-        //   apple_mem_border_id--;
       }
     } else if (type == 1) { // orange
       (*mem_id)--;
@@ -104,19 +101,17 @@ void find_and_lock_mem(int *mem_id, int expect_state, int result_state, int type
         V(&lock);
         continue;
       }
-      if (expect_state == 0) {
+      if (expect_state == MEM_FREE) {
         P(&mem_lock[*mem_id]);
         if ((*mem_id == orange_mem_border_id) && orange_mem_border_id && apple_mem_border_id < orange_mem_border_id)
           orange_mem_border_id--;
-      } else if (expect_state == 4) {
+      } else if (expect_state == MEM_ORANGE_WAITING) {
         P(&orange_lock[*mem_id]);
-        // if ((*mem_id == orange_mem_border_id) && orange_mem_border_id < N - 1)
-        //   orange_mem_border_id++;
       }
     }
     mem_state[*mem_id] = result_state;
+    mem_host[*mem_id] = producer_consumer_id;
     V(&lock);
-    printf("%d %d\n", apple_mem_border_id, orange_mem_border_id);
     break;
   }
 }
@@ -127,27 +122,27 @@ void *apple_producer(void *arg) {
   while (1) {
     P(&lock);
     printf("apple producer%d: free\n", id);
-    producer_consumer_state[id][0] = 0;
+    producer_consumer_state[id][APPLE_PRODUCER] = FREE;
     V(&lock);
-    sleep(rand() % 5 + 3);
+    sleep(free_time[id][APPLE_PRODUCER]);
 
     P(&lock);
     printf("apple producer%d: wait memory\n", id);
-    producer_consumer_state[id][0] = 1;
+    producer_consumer_state[id][APPLE_PRODUCER] = WAITING;
     V(&lock);
-    // P(&mem_lock[id]);
-    find_and_lock_mem(&mem_id, 0, 1, 0);
+    
+    find_and_lock_mem(id, &mem_id, MEM_FREE, MEM_APPLE_PRODUCE, 0);
 
     P(&lock);
     printf("apple producer%d: start to produce in mem%d\n", id, mem_id);
-    producer_consumer_state[id][0] = 2;
-    // mem_state[id] = 1;
+    producer_consumer_state[id][APPLE_PRODUCER] = PRODUCING;
+    producer_consumer_target[id][APPLE_PRODUCER] = mem_id;
     V(&lock);
-    sleep(work_time[id][0]);
+    sleep(work_time[id][APPLE_PRODUCER]);
 
     P(&lock);
     printf("apple producer%d: done\n", id);
-    mem_state[mem_id] = 2;
+    mem_state[mem_id] = MEM_APPLE_WAITING;
     V(&lock);
     V(&apple_lock[mem_id]);
     V(&apple_sum);
@@ -160,27 +155,27 @@ void *orange_producer(void *arg) {
   while (1) {
     P(&lock);
     printf("orange producer%d: free\n", id);
-    producer_consumer_state[id][1] = 0;
+    producer_consumer_state[id][ORANGE_PRODUCER] = FREE;
     V(&lock);
-    sleep(rand() % 5 + 3);
+    sleep(free_time[id][ORANGE_PRODUCER]);
 
     P(&lock);
     printf("orange producer%d: wait memory\n", id);
-    producer_consumer_state[id][1] = 1;
+    producer_consumer_state[id][ORANGE_PRODUCER] = WAITING;
     V(&lock);
-    // P(&mem_lock[id]);
-    find_and_lock_mem(&mem_id, 0, 3, 1);
+    
+    find_and_lock_mem(id, &mem_id, MEM_FREE, MEM_ORANGE_PRODUCE, 1);
 
     P(&lock);
     printf("orange producer%d: start to produce in mem%d\n", id, mem_id);
-    producer_consumer_state[id][1] = 2;
-    // mem_state[mem_id] = 3;
+    producer_consumer_state[id][ORANGE_PRODUCER] = PRODUCING;
+    producer_consumer_target[id][ORANGE_PRODUCER] = mem_id;
     V(&lock);
-    sleep(work_time[id][1]);
+    sleep(work_time[id][ORANGE_PRODUCER]);
 
     P(&lock);
     printf("orange producer%d: done\n", id);
-    mem_state[mem_id] = 4;
+    mem_state[mem_id] = MEM_ORANGE_WAITING;
     V(&lock);
     V(&orange_lock[mem_id]);
     V(&orange_sum);
@@ -193,28 +188,29 @@ void *apple_consumer(void *arg) {
   while (1) {
     P(&lock);
     printf("apple consumer%d: free\n", id);
-    producer_consumer_state[id][2] = 0;
+    producer_consumer_state[id][APPLE_CONSUMER] = FREE;
     V(&lock);
-    sleep(rand() % 5 + 3);
+    sleep(free_time[id][APPLE_CONSUMER]);
 
     P(&lock);
     printf("apple comsumer%d: wait apple\n", id);
-    producer_consumer_state[id][2] = 1;
+    producer_consumer_state[id][APPLE_CONSUMER] = WAITING;
     V(&lock);
-    // P(&apple_lock[id]);
+    
     P(&apple_sum);
-    find_and_lock_mem(&mem_id, 2, 5, 0);
+    find_and_lock_mem(id, &mem_id, MEM_APPLE_WAITING, MEM_APPLE_CONSUME, 0);
 
     P(&lock);
     printf("apple consumer%d: start to consume in mem%d\n", id, mem_id);
-    producer_consumer_state[id][2] = 2;
+    producer_consumer_state[id][APPLE_CONSUMER] = CONSUMING;
+    producer_consumer_target[id][APPLE_CONSUMER] = mem_id;
     V(&lock);
-    sleep(work_time[id][2]);
+    sleep(work_time[id][APPLE_CONSUMER]);
 
     P(&lock);
     printf("apple consumer%d: done\n", id);
-    mem_state[mem_id] = 0;
-    if ((mem_id == apple_mem_border_id) && apple_mem_border_id && mem_state[mem_id - 1] == 0)
+    mem_state[mem_id] = MEM_FREE;
+    if ((mem_id == apple_mem_border_id) && apple_mem_border_id && mem_state[mem_id - 1] == MEM_FREE)
       apple_mem_border_id--;
     V(&lock);
     V(&mem_lock[mem_id]);
@@ -227,28 +223,29 @@ void *orange_consumer(void *arg) {
   while (1) {
     P(&lock);
     printf("orange consumer%d: free\n", id);
-    producer_consumer_state[id][3] = 0;
+    producer_consumer_state[id][ORANGE_CONSUMER] = FREE;
     V(&lock);
-    sleep(rand() % 5 + 3);
+    sleep(free_time[id][ORANGE_CONSUMER]);
 
     P(&lock);
     printf("orange comsumer%d: wait orange\n", id);
-    producer_consumer_state[id][3] = 1;
+    producer_consumer_state[id][ORANGE_CONSUMER] = WAITING;
     V(&lock);
-    // P(&orange_lock[id]);
+    
     P(&orange_sum);
-    find_and_lock_mem(&mem_id, 4, 6, 1);
+    find_and_lock_mem(id, &mem_id, MEM_ORANGE_WAITING, MEM_ORANGE_CONSUME, 1);
 
     P(&lock);
     printf("orange consumer%d: start to consume in mem%d\n", id, mem_id);
-    producer_consumer_state[id][3] = 2;
+    producer_consumer_state[id][ORANGE_CONSUMER] = CONSUMING;
+    producer_consumer_target[id][ORANGE_CONSUMER] = mem_id;
     V(&lock);
-    sleep(work_time[id][3]);
+    sleep(work_time[id][ORANGE_CONSUMER]);
 
     P(&lock);
     printf("orange consumer%d: done\n", id);
-    mem_state[mem_id] = 0;
-    if ((mem_id == orange_mem_border_id) && orange_mem_border_id < N - 1 && mem_state[mem_id + 1] == 0)
+    mem_state[mem_id] = MEM_FREE;
+    if ((mem_id == orange_mem_border_id) && orange_mem_border_id < N - 1 && mem_state[mem_id + 1] == MEM_FREE)
       orange_mem_border_id++;
     V(&lock);
     V(&mem_lock[mem_id]);
