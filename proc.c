@@ -1,26 +1,48 @@
 #include <pthread.h>
-#include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 // 信号量
-#include "lib/sem.h"
+#include "sem.h"
 #include "data.h"
 #include "proc.h"
 
 // 内存锁
-struct Semaphome memLock[N];
+struct Semaphome mem_lock[N];
 // 同步锁
-struct Semaphome appleLock[N], appleSum;
-struct Semaphome orangeLock[N], orangeSum;
+struct Semaphome apple_lock[N];
+struct Semaphome orange_lock[N];
 // 临界区锁
 struct Semaphome lock;
 // 线程
-pthread_t threadAppleProducer[N], threadOrangeProducer[N];
-pthread_t threadAppleConsumer[N], threadOrangeConsumer[N];
+pthread_t thread_apple_producer[N], thread_orange_producer[N];
+pthread_t thread_apple_consumer[N], thread_orange_consumer[N];
 
-int id[N];
+int self_id[N];
+
+void proc_start() {
+
+  // 初始化生产者消费者的生产时间
+  for (int i = 0; i < N; i++) {
+    work_time[i][APPLE_PRODUCER] = rand() % 6 + 1;
+    work_time[i][ORANGE_PRODUCER] = rand() % 6 + 1;
+    work_time[i][APPLE_CONSUMER] = rand() % 2 + 1;
+    work_time[i][ORANGE_CONSUMER] = rand() % 2 + 1;
+
+    free_time[i][APPLE_PRODUCER] = rand() % 2 + 1;
+    free_time[i][ORANGE_PRODUCER] = rand() % 2 + 1;
+    free_time[i][APPLE_CONSUMER] = rand() % 2 + 1;
+    free_time[i][ORANGE_CONSUMER] = rand() % 2 + 1;
+  }
+
+  // 初始化信号量
+  init_sem(&lock, 1);
+  for (int i = 0; i < N; i++) {
+    init_sem(&mem_lock[i], 1);
+    init_sem(&apple_lock[i], 0);
+    init_sem(&orange_lock[i], 0);
+  }
 
 void Ps(int *memId, int stateCode, int resultCode, int type) {
   while (1) {
@@ -52,172 +74,140 @@ void Ps(int *memId, int stateCode, int resultCode, int type) {
   }
 }
 
-void *appleProducer(void *arg) {
+void *apple_producer(void *arg) {
   int id = *(int *)arg;
-  int memId = -1;
+  int memId = id - 1;
   while (1) {
     P(&lock);
     printf("apple producer%d: free\n", id);
-    pcState[id][0] = 0;
+    producer_consumer_state[id][APPLE_PRODUCER] = FREE;
     V(&lock);
-    sleep(rand() % 5 + 3);
+    sleep(free_time[id][APPLE_PRODUCER]);
 
     P(&lock);
     printf("apple producer%d: wait memory\n", id);
-    pcState[id][0] = 1;
+    producer_consumer_state[id][APPLE_PRODUCER] = WAITING;
     V(&lock);
     // P(&memLock[id]);
-    Ps(&memId, 0, 1, 0);
+    Ps(&memId, 0, 1);
 
     P(&lock);
-    printf("apple producer%d: start to produce in mem%d\n", id, memId);
-    pcState[id][0] = 2;
-    // memState[id] = 1;
+    printf("apple producer%d: start to produce\n", id);
+    producer_consumer_state[id][APPLE_PRODUCER] = PRODUCING;
+    mem_state[id] = MEM_APPLE_PRODUCE;
+    mem_host[id] = id;
+    producer_consumer_target[id][APPLE_PRODUCER] = id;
     V(&lock);
-    sleep(workTime[id][0]);
+    sleep(work_time[id][APPLE_PRODUCER]);
 
     P(&lock);
     printf("apple producer%d: done\n", id);
-    memState[memId] = 2;
+    mem_state[id] = MEM_APPLE_WAITING;
     V(&lock);
-    V(&appleLock[memId]);
-    V(&appleSum);
+    V(&apple_lock[id]);
   }
 }
 
-void *orangeProducer(void *arg) {
+void *orange_producer(void *arg) {
   int id = *(int *)arg;
-  int memId = N / 2 - 1;
+  int memId = id - 1;
   while (1) {
     P(&lock);
     printf("orange producer%d: free\n", id);
-    pcState[id][1] = 0;
+    producer_consumer_state[id][ORANGE_PRODUCER] = FREE;
     V(&lock);
-    sleep(rand() % 5 + 3);
+    sleep(free_time[id][ORANGE_PRODUCER]);
 
     P(&lock);
     printf("orange producer%d: wait memory\n", id);
-    pcState[id][1] = 1;
+    producer_consumer_state[id][ORANGE_PRODUCER] = WAITING;
     V(&lock);
     // P(&memLock[id]);
-    Ps(&memId, 0, 3, 1);
+    Ps(&memId, 0, 3);
 
     P(&lock);
-    printf("orange producer%d: start to produce in mem%d\n", id, memId);
-    pcState[id][1] = 2;
-    // memState[memId] = 3;
+    printf("orange producer%d: start to produce\n", id);
+    producer_consumer_state[id][ORANGE_PRODUCER] = PRODUCING;
+    mem_state[id] = MEM_ORANGE_PRODUCE;
+    mem_host[id] = id;
+    producer_consumer_target[id][ORANGE_PRODUCER] = id;
     V(&lock);
-    sleep(workTime[id][1]);
+    sleep(work_time[id][ORANGE_PRODUCER]);
 
     P(&lock);
     printf("orange producer%d: done\n", id);
-    memState[memId] = 4;
+    mem_state[id] = MEM_ORANGE_WAITING;
     V(&lock);
-    V(&orangeLock[memId]);
-    V(&orangeSum);
+    V(&orange_lock[id]);
   }
 }
 
-void *appleConsumer(void *arg) {
+void *apple_consumer(void *arg) {
   int id = *(int *)arg;
-  int memId = -1;
+  int memId = id - 1;
   while (1) {
     P(&lock);
     printf("apple consumer%d: free\n", id);
-    pcState[id][2] = 0;
+    producer_consumer_state[id][APPLE_CONSUMER] = FREE;
     V(&lock);
-    sleep(rand() % 5 + 3);
+    sleep(free_time[id][APPLE_CONSUMER]);
 
     P(&lock);
     printf("apple comsumer%d: wait apple\n", id);
-    pcState[id][2] = 1;
+    producer_consumer_state[id][APPLE_CONSUMER] = WAITING;
     V(&lock);
     // P(&appleLock[id]);
     P(&appleSum);
-    Ps(&memId, 2, 5, 0);
+    Ps(&memId, 2, 5);
 
     P(&lock);
-    printf("apple consumer%d: start to consume in mem%d\n", id, memId);
-    pcState[id][2] = 2;
+    printf("apple consumer%d: start to consume\n", id);
+    producer_consumer_state[id][APPLE_CONSUMER] = CONSUMING;
+    producer_consumer_target[id][APPLE_CONSUMER] = id;
+    mem_host[id] = id;
+    mem_state[id] = MEM_APPLE_CONSUME;
     V(&lock);
-    sleep(workTime[id][2]);
+    sleep(work_time[id][APPLE_CONSUMER]);
 
     P(&lock);
     printf("apple consumer%d: done\n", id);
-    memState[memId] = 0;
+    mem_state[id] = FREE;
     V(&lock);
-    V(&memLock[memId]);
+    V(&mem_lock[id]);
   }
 }
 
-void *orangeConsumer(void *arg) {
+void *orange_consumer(void *arg) {
   int id = *(int *)arg;
-  int memId = N / 2 - 1;
+  int memId = id - 1;
   while (1) {
     P(&lock);
     printf("orange consumer%d: free\n", id);
-    pcState[id][3] = 0;
+    producer_consumer_state[id][ORANGE_CONSUMER] = FREE;
     V(&lock);
-    sleep(rand() % 5 + 3);
+    sleep(free_time[id][ORANGE_CONSUMER]);
 
     P(&lock);
     printf("orange comsumer%d: wait orange\n", id);
-    pcState[id][3] = 1;
+    producer_consumer_state[id][ORANGE_CONSUMER] = WAITING;
     V(&lock);
     // P(&orangeLock[id]);
     P(&orangeSum);
-    Ps(&memId, 4, 6, 1);
+    Ps(&memId, 4, 6);
 
     P(&lock);
-    printf("orange consumer%d: start to consume in mem%d\n", id, memId);
-    pcState[id][3] = 2;
+    printf("orange consumer%d: start to consume\n", id);
+    producer_consumer_state[id][ORANGE_CONSUMER] = CONSUMING;
+    producer_consumer_target[id][ORANGE_CONSUMER] = id;
+    mem_host[id] = id;
+    mem_state[id] = MEM_ORANGE_CONSUME;
     V(&lock);
-    sleep(workTime[id][3]);
+    sleep(work_time[id][ORANGE_CONSUMER]);
 
     P(&lock);
     printf("orange consumer%d: done\n", id);
-    memState[memId] = 0;
+    mem_state[id] = FREE;
     V(&lock);
-    V(&memLock[memId]);
-  }
-}
-
-void proc_start() {
-
-  // 初始化生产者消费者的生产时间
-  for (int i = 0; i < N; i++) {
-    workTime[i][0] = rand() % 6 + 30;
-    workTime[i][1] = rand() % 6 + 30;
-    workTime[i][2] = rand() % 2 + 4;
-    workTime[i][3] = rand() % 2 + 4;
-  }
-
-  // 初始化信号量
-  initSem(&lock, 1);
-  for (int i = 0; i < N; i++) {
-    initSem(&memLock[i], 1);
-    initSem(&appleLock[i], 0);
-    initSem(&orangeLock[i], 0);
-  }
-  initSem(&appleSum, 0);
-  initSem(&orangeSum, 0);
-
-  for (int i = 0; i < N; i++) {
-    // id[N]不能是局部
-    id[i] = i;
-    pthread_create(&threadAppleProducer[i], NULL, appleProducer, &id[i]);
-    pthread_create(&threadAppleConsumer[i], NULL, appleConsumer, &id[i]);
-    pthread_create(&threadOrangeProducer[i], NULL, orangeProducer, &id[i]);
-    pthread_create(&threadOrangeConsumer[i], NULL, orangeConsumer, &id[i]);
-  }
-}
-
-// 销毁线程
-void proc_done() {
-  for (int i = 0; i < N; i++) {
-    pthread_cancel(threadAppleProducer[i]);
-    pthread_cancel(threadAppleConsumer[i]);
-    pthread_cancel(threadOrangeProducer[i]);
-    pthread_cancel(threadOrangeConsumer[i]);
+    V(&mem_lock[id]);
   }
 }

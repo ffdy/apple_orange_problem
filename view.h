@@ -1,6 +1,3 @@
-// void drawOnce();
-//键盘按键回调函数
-// void processInput();
-void *view(void *arg);
-void view_start();
-void view_done();
+void *view(void *arg);  // view线程工作
+void view_start();      // 创建view线程并运行
+void view_done();       // 通知view线程退出
