@@ -5,7 +5,6 @@
 int main() {
 
   view_start();
-  // 段溢出？？局部变量销毁
   proc_start();
 
   view_done();
