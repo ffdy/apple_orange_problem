@@ -5,8 +5,10 @@ find_package(glfw3 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(Freetype REQUIRED)
 
+include_directories(inc)
+
 set(BIN_NAME apple_orange_problem)
-set(SRC main.c data.c view.c proc.c sem.c lib/glad.c)
+set(SRC main.c lib/data.c lib/glad.c lib/proc.c lib/sem.c lib/view.c)
 
 add_executable(${BIN_NAME} ${SRC})
 

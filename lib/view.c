@@ -9,10 +9,10 @@
 #include "view.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "lib/stb_image.h" // 图片数据导入
+#include "stb_image.h" // 图片数据导入
 
 #define STB_TRUETYPE_IMPLEMENTATION
-#include "lib/stb_truetype.h" // 字体数据导入
+#include "stb_truetype.h" // 字体数据导入
 
 #define FPS 30  // 显示帧率
 #define WW 1600 // 显示宽度
