@@ -248,7 +248,7 @@ GLint gen_shader(const char *glsl_path, GLint shader_type) {
   glGetShaderiv(shader_id, GL_COMPILE_STATUS, &success);
   if (!success) {
     glGetShaderInfoLog(shader_id, 512, NULL, info_log);
-    printf("shader compile fail\n");
+    printf("shader compile fail: %s\n", info_log);
   }
 
   free((char *)shader_source);
@@ -273,10 +273,10 @@ GLint gen_shader_program(char *vertex_glsl_path, char *fragment_glsl_path) {
 
   int success;
   char info_log[512];
-  glGetProgramiv(shader_program, GL_COMPILE_STATUS, &success);
+  glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
   if (!success) {
     glGetProgramInfoLog(shader_program, 512, NULL, info_log);
-    printf("font shader program link fail\n");
+    printf("shader program linked fail: %s\n", info_log);
   }
 
   glDeleteShader(vertex_shader);
