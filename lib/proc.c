@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define DEBUG
+
 // 信号量
 #include "sem.h"
 #include "data.h"
@@ -121,27 +123,35 @@ void *apple_producer(void *arg) {
   int mem_id = -1;
   while (1) {
     P(&lock);
+    #ifdef DEBUG
     printf("apple producer%d: free\n", id);
+    #endif
     producer_consumer_state[id][APPLE_PRODUCER] = FREE;
     V(&lock);
     sleep(free_time[id][APPLE_PRODUCER]);
 
     P(&lock);
+    #ifdef DEBUG
     printf("apple producer%d: wait memory\n", id);
+    #endif
     producer_consumer_state[id][APPLE_PRODUCER] = WAITING;
     V(&lock);
     
     find_and_lock_mem(id, &mem_id, MEM_FREE, MEM_APPLE_PRODUCE, 0);
 
     P(&lock);
+    #ifdef DEBUG
     printf("apple producer%d: start to produce in mem%d\n", id, mem_id);
+    #endif
     producer_consumer_state[id][APPLE_PRODUCER] = PRODUCING;
     producer_consumer_target[id][APPLE_PRODUCER] = mem_id;
     V(&lock);
     sleep(work_time[id][APPLE_PRODUCER]);
 
     P(&lock);
+    #ifdef DEBUG
     printf("apple producer%d: done\n", id);
+    #endif
     mem_state[mem_id] = MEM_APPLE_WAITING;
     V(&lock);
     V(&apple_lock[mem_id]);
@@ -154,27 +164,35 @@ void *orange_producer(void *arg) {
   int mem_id = N / 2 - 1;
   while (1) {
     P(&lock);
+    #ifdef DEBUG
     printf("orange producer%d: free\n", id);
+    #endif
     producer_consumer_state[id][ORANGE_PRODUCER] = FREE;
     V(&lock);
     sleep(free_time[id][ORANGE_PRODUCER]);
 
     P(&lock);
+    #ifdef DEBUG
     printf("orange producer%d: wait memory\n", id);
+    #endif
     producer_consumer_state[id][ORANGE_PRODUCER] = WAITING;
     V(&lock);
     
     find_and_lock_mem(id, &mem_id, MEM_FREE, MEM_ORANGE_PRODUCE, 1);
 
     P(&lock);
+    #ifdef DEBUG
     printf("orange producer%d: start to produce in mem%d\n", id, mem_id);
+    #endif
     producer_consumer_state[id][ORANGE_PRODUCER] = PRODUCING;
     producer_consumer_target[id][ORANGE_PRODUCER] = mem_id;
     V(&lock);
     sleep(work_time[id][ORANGE_PRODUCER]);
 
     P(&lock);
+    #ifdef DEBUG
     printf("orange producer%d: done\n", id);
+    #endif
     mem_state[mem_id] = MEM_ORANGE_WAITING;
     V(&lock);
     V(&orange_lock[mem_id]);
@@ -187,13 +205,17 @@ void *apple_consumer(void *arg) {
   int mem_id = -1;
   while (1) {
     P(&lock);
+    #ifdef DEBUG
     printf("apple consumer%d: free\n", id);
+    #endif
     producer_consumer_state[id][APPLE_CONSUMER] = FREE;
     V(&lock);
     sleep(free_time[id][APPLE_CONSUMER]);
 
     P(&lock);
+    #ifdef DEBUG
     printf("apple comsumer%d: wait apple\n", id);
+    #endif
     producer_consumer_state[id][APPLE_CONSUMER] = WAITING;
     V(&lock);
     
@@ -201,14 +223,18 @@ void *apple_consumer(void *arg) {
     find_and_lock_mem(id, &mem_id, MEM_APPLE_WAITING, MEM_APPLE_CONSUME, 0);
 
     P(&lock);
+    #ifdef DEBUG
     printf("apple consumer%d: start to consume in mem%d\n", id, mem_id);
+    #endif
     producer_consumer_state[id][APPLE_CONSUMER] = CONSUMING;
     producer_consumer_target[id][APPLE_CONSUMER] = mem_id;
     V(&lock);
     sleep(work_time[id][APPLE_CONSUMER]);
 
     P(&lock);
+    #ifdef DEBUG
     printf("apple consumer%d: done\n", id);
+    #endif
     mem_state[mem_id] = MEM_FREE;
     if ((mem_id == apple_mem_border_id) && apple_mem_border_id && mem_state[mem_id - 1] == MEM_FREE)
       apple_mem_border_id--;
@@ -222,13 +248,17 @@ void *orange_consumer(void *arg) {
   int mem_id = N / 2 - 1;
   while (1) {
     P(&lock);
+    #ifdef DEBUG
     printf("orange consumer%d: free\n", id);
+    #endif
     producer_consumer_state[id][ORANGE_CONSUMER] = FREE;
     V(&lock);
     sleep(free_time[id][ORANGE_CONSUMER]);
 
     P(&lock);
+    #ifdef DEBUG
     printf("orange comsumer%d: wait orange\n", id);
+    #endif
     producer_consumer_state[id][ORANGE_CONSUMER] = WAITING;
     V(&lock);
     
@@ -236,14 +266,18 @@ void *orange_consumer(void *arg) {
     find_and_lock_mem(id, &mem_id, MEM_ORANGE_WAITING, MEM_ORANGE_CONSUME, 1);
 
     P(&lock);
+    #ifdef DEBUG
     printf("orange consumer%d: start to consume in mem%d\n", id, mem_id);
+    #endif
     producer_consumer_state[id][ORANGE_CONSUMER] = CONSUMING;
     producer_consumer_target[id][ORANGE_CONSUMER] = mem_id;
     V(&lock);
     sleep(work_time[id][ORANGE_CONSUMER]);
 
     P(&lock);
+    #ifdef DEBUG
     printf("orange consumer%d: done\n", id);
+    #endif
     mem_state[mem_id] = MEM_FREE;
     if ((mem_id == orange_mem_border_id) && orange_mem_border_id < N - 1 && mem_state[mem_id + 1] == MEM_FREE)
       orange_mem_border_id++;
